@@ -42,7 +42,10 @@ export interface UserSupportedModelPricing {
 
 export interface UserSupportedModel {
   name: string
+  display_name: string
   platform: string
+  capability: string
+  available: boolean
   pricing: UserSupportedModelPricing | null
 }
 

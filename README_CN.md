@@ -45,6 +45,12 @@ Sub2API 是一个 AI API 网关平台，用于分发和管理 AI 产品订阅的
 - **管理后台** - Web 界面进行监控和管理
 - **外部系统集成** - 支持通过 iframe 嵌入外部系统（如工单等），扩展管理后台功能
 
+## DGWay 文档
+
+- [DGWay API 使用方式](docs/DGWAY_USAGE_CN.md)
+- [DGWay API 设置与盈利](docs/DGWay-API-设置与盈利.md)
+- [DGWay 个人网关部署记录](docs/DGWAY_PERSONAL_GATEWAY.md)
+
 ## ❤️ 赞助商
 
 > [想出现在这里？](mailto:support@pincc.ai)

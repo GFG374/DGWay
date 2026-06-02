@@ -122,7 +122,6 @@ scripts
 .code-review-state
 #openspec/
 code-reviews/
-AGENTS.md
 backend/cmd/server/server
 deploy/docker-compose.override.yml
 .gocache/
@@ -131,6 +130,10 @@ docs/*
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
+!docs/DGWAY_USAGE_CN.md
+!docs/DGWAY_PERSONAL_GATEWAY.md
+!docs/DGWay-API-设置与盈利.md
+!docs/dgway-api-usage-guide.html
 .serena/
 .codex/
 frontend/coverage/

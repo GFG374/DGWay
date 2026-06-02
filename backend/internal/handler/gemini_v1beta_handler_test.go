@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/gemini"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/stretchr/testify/require"
 )
@@ -166,4 +167,42 @@ func TestShouldFallbackGeminiModel_DelegatesScopeFallback(t *testing.T) {
 		Body:       []byte("insufficient authentication scopes"),
 	}
 	require.True(t, shouldFallbackGeminiModel("gemini-future-model", res))
+}
+
+func TestFilterGeminiModelsByCustomConfig_ReturnsOnlyEnabledGroupModels(t *testing.T) {
+	t.Parallel()
+
+	got := filterGeminiModelsByCustomConfig(gemini.DefaultModels(), service.GroupModelsListConfig{
+		Enabled: true,
+		Models:  []string{"gemini-2.5-pro", "models/gemini-2.5-flash", "gemini-missing"},
+	})
+
+	require.Equal(t, []string{
+		"models/gemini-2.5-pro",
+		"models/gemini-2.5-flash",
+	}, geminiModelNames(got.Models))
+}
+
+func TestFilterGeminiModelsByCustomConfig_DisabledKeepsSource(t *testing.T) {
+	t.Parallel()
+
+	source := []gemini.Model{
+		{Name: "models/gemini-2.5-flash"},
+		{Name: "models/gemini-2.5-pro"},
+	}
+
+	got := filterGeminiModelsByCustomConfig(source, service.GroupModelsListConfig{
+		Enabled: false,
+		Models:  []string{"gemini-2.5-pro"},
+	})
+
+	require.Equal(t, []string{"models/gemini-2.5-flash", "models/gemini-2.5-pro"}, geminiModelNames(got.Models))
+}
+
+func geminiModelNames(models []gemini.Model) []string {
+	out := make([]string, len(models))
+	for i := range models {
+		out[i] = models[i].Name
+	}
+	return out
 }

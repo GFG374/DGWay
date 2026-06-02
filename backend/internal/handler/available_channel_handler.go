@@ -2,6 +2,7 @@ package handler
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
@@ -53,12 +54,13 @@ func (h *AvailableChannelHandler) featureEnabled(c *gin.Context) bool {
 // 订阅视觉加深），并用 RateMultiplier 作为默认倍率；用户专属倍率前端走
 // /groups/rates，和 API 密钥页面保持一致。
 type userAvailableGroup struct {
-	ID               int64   `json:"id"`
-	Name             string  `json:"name"`
-	Platform         string  `json:"platform"`
-	SubscriptionType string  `json:"subscription_type"`
-	RateMultiplier   float64 `json:"rate_multiplier"`
-	IsExclusive      bool    `json:"is_exclusive"`
+	ID               int64                         `json:"id"`
+	Name             string                        `json:"name"`
+	Platform         string                        `json:"platform"`
+	SubscriptionType string                        `json:"subscription_type"`
+	RateMultiplier   float64                       `json:"rate_multiplier"`
+	IsExclusive      bool                          `json:"is_exclusive"`
+	ModelsListConfig service.GroupModelsListConfig `json:"-"`
 }
 
 // userSupportedModelPricing 用户可见的定价字段白名单。
@@ -87,9 +89,12 @@ type userPricingIntervalDTO struct {
 
 // userSupportedModel 用户可见的支持模型条目。
 type userSupportedModel struct {
-	Name     string                     `json:"name"`
-	Platform string                     `json:"platform"`
-	Pricing  *userSupportedModelPricing `json:"pricing"`
+	Name        string                     `json:"name"`
+	DisplayName string                     `json:"display_name"`
+	Platform    string                     `json:"platform"`
+	Capability  string                     `json:"capability"`
+	Available   bool                       `json:"available"`
+	Pricing     *userSupportedModelPricing `json:"pricing"`
 }
 
 // userChannelPlatformSection 单渠道内某个平台的子视图：用户可见的分组 + 该平台
@@ -196,10 +201,56 @@ func buildPlatformSections(
 		sections = append(sections, userChannelPlatformSection{
 			Platform:        platform,
 			Groups:          groupsByPlatform[platform],
-			SupportedModels: toUserSupportedModels(ch.SupportedModels, platformSet),
+			SupportedModels: supportedModelsForPlatform(ch.SupportedModels, platform, groupsByPlatform[platform], platformSet),
 		})
 	}
 	return sections
+}
+
+func supportedModelsForPlatform(
+	src []service.SupportedModel,
+	platform string,
+	groups []userAvailableGroup,
+	platformSet map[string]struct{},
+) []userSupportedModel {
+	customModels := customModelsForGroups(groups)
+	if len(customModels) == 0 {
+		return toUserSupportedModels(src, platformSet)
+	}
+
+	pricingByModel := make(map[string]*userSupportedModelPricing)
+	for _, m := range toUserSupportedModels(src, platformSet) {
+		pricingByModel[strings.ToLower(m.Name)] = m.Pricing
+	}
+
+	out := make([]userSupportedModel, 0, len(customModels))
+	for _, model := range customModels {
+		out = append(out, buildUserSupportedModel(model, platform, pricingByModel[strings.ToLower(model)]))
+	}
+	return out
+}
+
+func customModelsForGroups(groups []userAvailableGroup) []string {
+	seen := make(map[string]struct{})
+	out := make([]string, 0)
+	for _, g := range groups {
+		if !g.ModelsListConfig.Enabled {
+			continue
+		}
+		for _, model := range g.ModelsListConfig.Models {
+			model = strings.TrimSpace(model)
+			if model == "" {
+				continue
+			}
+			key := strings.ToLower(model)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			out = append(out, model)
+		}
+	}
+	return out
 }
 
 // filterUserVisibleGroups 仅保留用户可访问的分组。
@@ -219,6 +270,7 @@ func filterUserVisibleGroups(
 			SubscriptionType: g.SubscriptionType,
 			RateMultiplier:   g.RateMultiplier,
 			IsExclusive:      g.IsExclusive,
+			ModelsListConfig: g.ModelsListConfig,
 		})
 	}
 	return visible
@@ -239,13 +291,70 @@ func toUserSupportedModels(
 				continue
 			}
 		}
-		out = append(out, userSupportedModel{
-			Name:     m.Name,
-			Platform: m.Platform,
-			Pricing:  toUserPricing(m.Pricing),
-		})
+		out = append(out, buildUserSupportedModel(m.Name, m.Platform, toUserPricing(m.Pricing)))
 	}
 	return out
+}
+
+func buildUserSupportedModel(name, platform string, pricing *userSupportedModelPricing) userSupportedModel {
+	return userSupportedModel{
+		Name:        name,
+		DisplayName: displayModelName(name),
+		Platform:    platform,
+		Capability:  inferUserModelCapability(platform, name, pricing),
+		Available:   true,
+		Pricing:     pricing,
+	}
+}
+
+func inferUserModelCapability(platform, name string, pricing *userSupportedModelPricing) string {
+	lower := strings.ToLower(strings.TrimSpace(name))
+	if pricing != nil && pricing.BillingMode == string(service.BillingModeImage) {
+		if platform == service.PlatformOpenAI {
+			return "image"
+		}
+		return "gemini-image"
+	}
+	if platform == service.PlatformOpenAI {
+		if strings.HasPrefix(lower, "gpt-image-") {
+			return "image"
+		}
+		if strings.Contains(lower, "codex") || strings.Contains(lower, "coding") {
+			return "codex"
+		}
+		return "chat"
+	}
+	if platform == service.PlatformGemini {
+		if strings.Contains(lower, "image") || strings.Contains(lower, "banana") {
+			return "gemini-image"
+		}
+		return "gemini-text"
+	}
+	if platform == service.PlatformAntigravity {
+		if strings.HasPrefix(lower, "claude-") {
+			return "claude-code"
+		}
+		if strings.Contains(lower, "image") || strings.Contains(lower, "banana") {
+			return "gemini-image"
+		}
+		return "gemini-text"
+	}
+	return "chat"
+}
+
+func displayModelName(name string) string {
+	parts := strings.FieldsFunc(name, func(r rune) bool { return r == '-' || r == '_' })
+	for i := range parts {
+		if strings.EqualFold(parts[i], "gpt") {
+			parts[i] = "GPT"
+			continue
+		}
+		if parts[i] == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(parts[i][:1]) + parts[i][1:]
+	}
+	return strings.Join(parts, " ")
 }
 
 // toUserPricing 将 service 层定价转换为用户 DTO；入参为 nil 时返回 nil。

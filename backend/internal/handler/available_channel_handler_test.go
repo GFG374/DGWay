@@ -155,3 +155,42 @@ func TestBuildPlatformSections_GroupsByPlatform(t *testing.T) {
 	require.Len(t, sections[0].SupportedModels, 1)
 	require.Equal(t, "claude-sonnet-4-6", sections[0].SupportedModels[0].Name)
 }
+
+func TestBuildPlatformSections_UsesCustomModelsListWhenEnabled(t *testing.T) {
+	// 分组已有自定义 /v1/models 列表时，用户页应展示扫描后写入的可用模型，
+	// 而不是继续展示渠道定价/映射里的失败或旧模型。
+	ch := service.AvailableChannel{
+		Name: "ch",
+		SupportedModels: []service.SupportedModel{
+			{Name: "gpt-5.4", Platform: "openai"},
+			{Name: "gpt-image-1", Platform: "openai"},
+			{Name: "old-failed-model", Platform: "openai"},
+		},
+	}
+	visible := []userAvailableGroup{
+		{
+			ID:       1,
+			Name:     "g-openai",
+			Platform: "openai",
+			ModelsListConfig: service.GroupModelsListConfig{
+				Enabled: true,
+				Models:  []string{"gpt-image-2", "gpt-5.4"},
+			},
+		},
+	}
+
+	sections := buildPlatformSections(ch, visible)
+
+	require.Len(t, sections, 1)
+	require.Equal(t, []string{"gpt-image-2", "gpt-5.4"}, userModelNames(sections[0].SupportedModels))
+	require.Equal(t, "image", sections[0].SupportedModels[0].Capability)
+	require.Equal(t, "chat", sections[0].SupportedModels[1].Capability)
+}
+
+func userModelNames(models []userSupportedModel) []string {
+	out := make([]string, len(models))
+	for i := range models {
+		out[i] = models[i].Name
+	}
+	return out
+}

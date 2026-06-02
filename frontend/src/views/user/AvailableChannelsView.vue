@@ -94,7 +94,12 @@ const filteredChannels = computed(() => {
         (p) =>
           p.platform.toLowerCase().includes(q) ||
           p.groups.some((g) => g.name.toLowerCase().includes(q)) ||
-          p.supported_models.some((m) => m.name.toLowerCase().includes(q)),
+          p.supported_models.some(
+            (m) =>
+              m.name.toLowerCase().includes(q) ||
+              (m.display_name || '').toLowerCase().includes(q) ||
+              (m.capability || '').toLowerCase().includes(q),
+          ),
       )
       if (matchingSections.length === 0) return null
       return { ...ch, platforms: matchingSections }

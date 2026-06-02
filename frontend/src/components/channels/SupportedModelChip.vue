@@ -25,7 +25,23 @@
       >
         {{ model.platform }}
       </span>
-      {{ model.name }}
+      <span>{{ model.display_name || model.name }}</span>
+      <span
+        v-if="model.capability"
+        class="rounded bg-white/70 px-1 text-[10px] uppercase text-gray-600 dark:bg-dark-900/50 dark:text-gray-300"
+      >
+        {{ modelCapabilityLabel(model.capability) }}
+      </span>
+      <span
+        class="rounded px-1 text-[10px] font-semibold"
+        :class="
+          model.available === false
+            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+        "
+      >
+        {{ modelStatusLabel(model.available !== false) }}
+      </span>
     </span>
 
     <!-- Teleport to body so the popover is not clipped by card/overflow-hidden
@@ -45,7 +61,7 @@
           class="flex items-center justify-between gap-2 rounded-t-lg border-b px-3 py-2"
           :class="[popoverHeaderClass, popoverBorderClass]"
         >
-          <span class="truncate font-semibold">{{ model.name }}</span>
+          <span class="truncate font-semibold">{{ model.display_name || model.name }}</span>
           <span
             v-if="model.platform"
             class="flex-shrink-0 rounded bg-white/70 px-1.5 py-0.5 text-[10px] uppercase tracking-wide dark:bg-dark-900/60"
@@ -55,6 +71,21 @@
         </div>
 
         <div class="p-3">
+          <div class="mb-2 space-y-1 text-gray-700 dark:text-gray-300">
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">实际模型</span>
+              <span class="max-w-[12rem] truncate font-mono">{{ model.name }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">能力</span>
+              <span>{{ modelCapabilityLabel(model.capability) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">状态</span>
+              <span>{{ modelStatusLabel(model.available !== false) }}</span>
+            </div>
+          </div>
+
           <div v-if="!model.pricing" class="text-gray-500 dark:text-gray-400">
             {{ noPricingLabel }}
           </div>
@@ -167,6 +198,7 @@ import type { UserPricingInterval, UserSupportedModel } from '@/api/channels'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import type { GroupPlatform } from '@/types'
 import { platformBadgeClass, platformBorderClass, platformBadgeLightClass } from '@/utils/platformColors'
+import { modelCapabilityLabel, modelStatusLabel } from '@/utils/availableModelDisplay'
 
 const props = withDefaults(
   defineProps<{

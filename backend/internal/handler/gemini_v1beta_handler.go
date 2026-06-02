@@ -48,7 +48,7 @@ func (h *GatewayHandler) GeminiV1BetaListModels(c *gin.Context) {
 
 	// 强制 antigravity 模式：返回 antigravity 支持的模型列表
 	if forcePlatform == service.PlatformAntigravity {
-		c.JSON(http.StatusOK, antigravity.FallbackGeminiModelsList())
+		c.JSON(http.StatusOK, filterAntigravityGeminiModelsByCustomConfig(antigravity.DefaultGeminiModels(), apiKeyModelsListConfig(apiKey)))
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *GatewayHandler) GeminiV1BetaListModels(c *gin.Context) {
 		hasAntigravity, _ := h.geminiCompatService.HasAntigravityAccounts(c.Request.Context(), apiKey.GroupID)
 		if hasAntigravity {
 			// antigravity 账户使用静态模型列表
-			c.JSON(http.StatusOK, gemini.FallbackModelsList())
+			c.JSON(http.StatusOK, filterGeminiModelsByCustomConfig(gemini.DefaultModels(), apiKeyModelsListConfig(apiKey)))
 			return
 		}
 		markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
@@ -72,8 +72,14 @@ func (h *GatewayHandler) GeminiV1BetaListModels(c *gin.Context) {
 		return
 	}
 	if shouldFallbackGeminiModels(res) {
-		c.JSON(http.StatusOK, gemini.FallbackModelsList())
+		c.JSON(http.StatusOK, filterGeminiModelsByCustomConfig(gemini.DefaultModels(), apiKeyModelsListConfig(apiKey)))
 		return
+	}
+	if apiKey.Group != nil && apiKey.Group.CustomModelsListEnabled() {
+		if filtered, ok := filterGeminiUpstreamModelsByCustomConfig(res.Body, apiKey.Group.ModelsListConfig); ok {
+			c.JSON(http.StatusOK, filtered)
+			return
+		}
 	}
 	writeUpstreamResponse(c, res)
 }
@@ -718,6 +724,91 @@ func shouldFallbackGeminiModel(modelName string, res *service.UpstreamHTTPResult
 		return false
 	}
 	return gemini.HasFallbackModel(modelName)
+}
+
+func filterGeminiUpstreamModelsByCustomConfig(body []byte, cfg service.GroupModelsListConfig) (gemini.ModelsListResponse, bool) {
+	var parsed gemini.ModelsListResponse
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return gemini.ModelsListResponse{}, false
+	}
+	return filterGeminiModelsByCustomConfig(parsed.Models, cfg), true
+}
+
+func apiKeyModelsListConfig(apiKey *service.APIKey) service.GroupModelsListConfig {
+	if apiKey == nil || apiKey.Group == nil {
+		return service.GroupModelsListConfig{}
+	}
+	return apiKey.Group.ModelsListConfig
+}
+
+func filterGeminiModelsByCustomConfig(models []gemini.Model, cfg service.GroupModelsListConfig) gemini.ModelsListResponse {
+	if !cfg.Enabled || len(cfg.Models) == 0 {
+		return gemini.ModelsListResponse{Models: models}
+	}
+
+	byID := make(map[string]gemini.Model, len(models))
+	available := make([]string, 0, len(models))
+	for _, model := range models {
+		id := normalizeGeminiModelID(model.Name)
+		if id == "" {
+			continue
+		}
+		byID[id] = model
+		available = append(available, id)
+	}
+
+	selected := filterModelsByCustomList(available, nil, normalizeGeminiModelIDs(cfg.Models))
+	out := make([]gemini.Model, 0, len(selected))
+	for _, id := range selected {
+		if model, ok := byID[normalizeGeminiModelID(id)]; ok {
+			out = append(out, model)
+		}
+	}
+	return gemini.ModelsListResponse{Models: out}
+}
+
+func filterAntigravityGeminiModelsByCustomConfig(models []antigravity.GeminiModel, cfg service.GroupModelsListConfig) antigravity.GeminiModelsListResponse {
+	if !cfg.Enabled || len(cfg.Models) == 0 {
+		return antigravity.GeminiModelsListResponse{Models: models}
+	}
+
+	byID := make(map[string]antigravity.GeminiModel, len(models))
+	available := make([]string, 0, len(models))
+	for _, model := range models {
+		id := normalizeGeminiModelID(model.Name)
+		if id == "" {
+			continue
+		}
+		byID[id] = model
+		available = append(available, id)
+	}
+
+	selected := filterModelsByCustomList(available, nil, normalizeGeminiModelIDs(cfg.Models))
+	out := make([]antigravity.GeminiModel, 0, len(selected))
+	for _, id := range selected {
+		if model, ok := byID[normalizeGeminiModelID(id)]; ok {
+			out = append(out, model)
+		}
+	}
+	return antigravity.GeminiModelsListResponse{Models: out}
+}
+
+func normalizeGeminiModelID(model string) string {
+	model = strings.TrimSpace(model)
+	if strings.HasPrefix(model, "models/") {
+		model = strings.TrimPrefix(model, "models/")
+	}
+	return strings.TrimSpace(model)
+}
+
+func normalizeGeminiModelIDs(models []string) []string {
+	out := make([]string, 0, len(models))
+	for _, model := range models {
+		if normalized := normalizeGeminiModelID(model); normalized != "" {
+			out = append(out, normalized)
+		}
+	}
+	return out
 }
 
 // extractGeminiCLISessionHash 从 Gemini CLI 请求中提取会话标识。
