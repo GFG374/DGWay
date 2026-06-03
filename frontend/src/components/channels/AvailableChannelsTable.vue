@@ -1,8 +1,8 @@
 <template>
-  <div class="card overflow-hidden">
+  <div class="card max-h-[calc(100vh-15rem)] overflow-auto">
     <table class="w-full table-fixed border-collapse text-sm">
       <thead>
-        <tr class="border-b border-gray-100 bg-gray-50/50 text-xs font-medium uppercase tracking-wide text-gray-500 dark:border-dark-700 dark:bg-dark-800/50 dark:text-gray-400">
+        <tr class="sticky top-0 z-10 border-b border-gray-100 bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-400">
           <th class="w-[180px] px-4 py-3 text-center">{{ columns.name }}</th>
           <th class="w-[200px] px-4 py-3 text-left">{{ columns.description }}</th>
           <th class="w-[140px] px-4 py-3 text-left">{{ columns.platform }}</th>
@@ -72,19 +72,21 @@
 
           <!-- 支持模型 -->
           <td class="align-top px-4 py-3">
-            <div class="flex flex-wrap gap-1">
-              <SupportedModelChip
-                v-for="m in section.supported_models"
-                :key="`${section.platform}-${m.name}`"
-                :model="m"
-                :pricing-key-prefix="pricingKeyPrefix"
-                :no-pricing-label="noPricingLabel"
-                :show-platform="false"
-                :platform-hint="section.platform"
-              />
-              <span v-if="section.supported_models.length === 0" class="text-xs text-gray-400">
-                {{ noModelsLabel }}
-              </span>
+            <div class="max-h-56 overflow-y-auto pr-1">
+              <div class="flex flex-wrap gap-1">
+                <SupportedModelChip
+                  v-for="m in section.supported_models"
+                  :key="`${section.platform}-${m.name}`"
+                  :model="m"
+                  :pricing-key-prefix="pricingKeyPrefix"
+                  :no-pricing-label="noPricingLabel"
+                  :show-platform="false"
+                  :platform-hint="section.platform"
+                />
+                <span v-if="section.supported_models.length === 0" class="text-xs text-gray-400">
+                  {{ noModelsLabel }}
+                </span>
+              </div>
             </div>
           </td>
         </tr>
