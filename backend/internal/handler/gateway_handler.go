@@ -1152,10 +1152,38 @@ func defaultModelIDsForPlatform(platform string) []string {
 // AntigravityModels 返回 Antigravity 支持的全部模型
 // GET /antigravity/models
 func (h *GatewayHandler) AntigravityModels(c *gin.Context) {
+	apiKey, _ := middleware2.GetAPIKeyFromContext(c)
+	models := filterAntigravityModelsByCustomConfig(antigravity.DefaultModels(), apiKeyModelsListConfig(apiKey))
 	c.JSON(http.StatusOK, gin.H{
 		"object": "list",
-		"data":   antigravity.DefaultModels(),
+		"data":   models,
 	})
+}
+
+func filterAntigravityModelsByCustomConfig(models []antigravity.ClaudeModel, cfg service.GroupModelsListConfig) []antigravity.ClaudeModel {
+	if !cfg.Enabled || len(cfg.Models) == 0 {
+		return models
+	}
+
+	byID := make(map[string]antigravity.ClaudeModel, len(models))
+	available := make([]string, 0, len(models))
+	for _, model := range models {
+		id := strings.TrimSpace(model.ID)
+		if id == "" {
+			continue
+		}
+		byID[id] = model
+		available = append(available, id)
+	}
+
+	selected := filterModelsByCustomList(available, nil, cfg.Models)
+	out := make([]antigravity.ClaudeModel, 0, len(selected))
+	for _, id := range selected {
+		if model, ok := byID[strings.TrimSpace(id)]; ok {
+			out = append(out, model)
+		}
+	}
+	return out
 }
 
 func cloneAPIKeyWithGroup(apiKey *service.APIKey, group *service.Group) *service.APIKey {

@@ -392,6 +392,35 @@ func TestGatewayModels_OpenAICustomModelsListKeepsOpenAIResponseShapeForDefaultF
 	require.Empty(t, got.Data[0].CreatedAt)
 }
 
+func TestGatewayAntigravityModels_CustomModelsListFiltersDefaultModels(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	h := newGatewayModelsHandlerForTest(nil)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/antigravity/v1/models", nil)
+	c.Set(string(middleware2.ContextKeyAPIKey), &service.APIKey{
+		Group: &service.Group{
+			ID:       28,
+			Platform: service.PlatformAntigravity,
+			ModelsListConfig: service.GroupModelsListConfig{
+				Enabled: true,
+				Models:  []string{"gemini-2.5-flash", "claude-opus-4-6"},
+			},
+		},
+	})
+
+	h.AntigravityModels(c)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var got gatewayModelsResponseForTest
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &got))
+	require.Equal(t, "list", got.Object)
+	require.Equal(t, []string{"gemini-2.5-flash", "claude-opus-4-6"}, modelIDsForTest(got.Data))
+}
+
 func modelIDsForTest(models []gatewayModelItemForTest) []string {
 	ids := make([]string, 0, len(models))
 	for _, model := range models {

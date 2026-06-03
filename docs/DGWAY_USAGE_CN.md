@@ -149,11 +149,11 @@ curl http://8.148.191.211/v1beta/models \
 
 | 能力 | 模型 |
 | --- | --- |
-| Claude Code | `claude-sonnet-4-6`、`claude-opus-4-6`、`claude-opus-4-6-thinking` |
-| Gemini 文本 | `gemini-2.5-flash` |
+| Claude Code | `claude-opus-4-5-thinking`、`claude-opus-4-6`、`claude-opus-4-6-thinking`、`claude-sonnet-4-6` |
+| Gemini 文本 | `gemini-2.5-flash`、`gemini-2.5-flash-lite`、`gemini-2.5-flash-thinking`、`gemini-3-flash`、`gemini-3-pro-high`、`gemini-3-pro-low`、`gemini-3-pro-preview`、`gemini-3.1-pro-low` |
 | Gemini 图片 | `gemini-3.1-flash-image`、`gemini-3.1-flash-image-preview`、`gemini-3-pro-image` |
 
-注意：`claude-opus-4-8` 当前不可用，不要在 Claude Code 里映射到它。
+注意：`/antigravity/v1/models` 和用户页都会按分组自定义模型列表展示。`claude-opus-4-7`、`claude-opus-4-8`、`claude-sonnet-4-5`、`claude-sonnet-4-5-thinking`、`gemini-2.5-flash-image`、`gemini-2.5-flash-image-preview`、`gemini-3.1-pro-high` 当前实测不可用，不要映射到这些模型。
 
 ## 7. 额度说明
 
