@@ -91,26 +91,17 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 		require.Truef(t, exists, "user DTO must expose %q", key)
 	}
 
-	// 验证 section 的字段（platform / groups / supported_models）。
+	// 验证 section 的字段：用户页只展示平台和模型，不暴露后台分组名。
 	rawSection, err := json.Marshal(row.Platforms[0])
 	require.NoError(t, err)
 	var sectionDecoded map[string]any
 	require.NoError(t, json.Unmarshal(rawSection, &sectionDecoded))
-	for _, key := range []string{"platform", "groups", "supported_models"} {
+	for _, key := range []string{"platform", "supported_models"} {
 		_, exists := sectionDecoded[key]
 		require.Truef(t, exists, "platform section must expose %q", key)
 	}
-
-	// Group DTO 暴露区分专属/公开、订阅类型、默认倍率所需的字段，
-	// 前端据此渲染 GroupBadge 并与 API 密钥页保持一致的视觉。
-	rawGroup, err := json.Marshal(row.Platforms[0].Groups[0])
-	require.NoError(t, err)
-	var groupDecoded map[string]any
-	require.NoError(t, json.Unmarshal(rawGroup, &groupDecoded))
-	for _, key := range []string{"id", "name", "platform", "subscription_type", "rate_multiplier", "is_exclusive"} {
-		_, exists := groupDecoded[key]
-		require.Truef(t, exists, "group DTO must expose %q", key)
-	}
+	_, exists := sectionDecoded["groups"]
+	require.False(t, exists, "user platform section must not expose backend groups")
 
 	// pricing interval 白名单：不应暴露 id / sort_order。
 	pricing := toUserPricing(&service.ChannelModelPricing{

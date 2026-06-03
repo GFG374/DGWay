@@ -48,11 +48,8 @@ func (h *AvailableChannelHandler) featureEnabled(c *gin.Context) bool {
 	return h.settingService.GetAvailableChannelsRuntime(c.Request.Context()).Enabled
 }
 
-// userAvailableGroup 用户可见的分组概要（白名单字段）。
-//
-// 前端据此区分专属 vs 公开分组（IsExclusive）、订阅 vs 标准分组（SubscriptionType，
-// 订阅视觉加深），并用 RateMultiplier 作为默认倍率；用户专属倍率前端走
-// /groups/rates，和 API 密钥页面保持一致。
+// userAvailableGroup 是用户可访问分组的服务端内部概要，用于判断平台和展开
+// 自定义 /v1/models 列表。普通用户响应不会序列化这些分组字段。
 type userAvailableGroup struct {
 	ID               int64                         `json:"id"`
 	Name             string                        `json:"name"`
@@ -97,19 +94,18 @@ type userSupportedModel struct {
 	Pricing     *userSupportedModelPricing `json:"pricing"`
 }
 
-// userChannelPlatformSection 单渠道内某个平台的子视图：用户可见的分组 + 该平台
-// 支持的模型。按 platform 聚合后让前端可以把渠道名作为 row-group 一次渲染，
-// 后面的平台行按 sections 顺序铺开。
+// userChannelPlatformSection 单渠道内某个平台的子视图。Groups 只用于服务端
+// 计算自定义模型列表，不序列化给普通用户；用户页只展示平台和支持模型。
 type userChannelPlatformSection struct {
 	Platform        string               `json:"platform"`
-	Groups          []userAvailableGroup `json:"groups"`
+	Groups          []userAvailableGroup `json:"-"`
 	SupportedModels []userSupportedModel `json:"supported_models"`
 }
 
 // userAvailableChannel 用户可见的渠道条目（白名单字段）。
 //
 // 每个渠道聚合为一条记录，内嵌 platforms 子数组：每个 section 对应一个平台，
-// 包含该平台的 groups 和 supported_models。
+// 面向用户仅返回 supported_models，不暴露后台分组。
 type userAvailableChannel struct {
 	Name        string                       `json:"name"`
 	Description string                       `json:"description"`
@@ -172,7 +168,7 @@ func (h *AvailableChannelHandler) List(c *gin.Context) {
 }
 
 // buildPlatformSections 把一个渠道按 visibleGroups 的平台集合拆成有序的 section 列表：
-// 每个 section 对应一个平台，只包含该平台的 groups 和 supported_models。
+// 每个 section 对应一个平台；分组仅作为内部模型聚合输入，不暴露给普通用户。
 // 输出按 platform 字母序稳定排序，便于前端等效比较与回归测试。
 func buildPlatformSections(
 	ch service.AvailableChannel,

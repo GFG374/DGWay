@@ -131,7 +131,9 @@ curl http://8.148.191.211/v1beta/models \
 
 ## 6. 当前可用模型
 
-### GPT / OpenAI 分组
+可用渠道页面只展示用户能调用的模型名称和定价，不展示后台分组名称。后台分组仍用于权限、调度和后续价格配置。
+
+### GPT / OpenAI
 
 | 能力 | 模型 |
 | --- | --- |
@@ -139,21 +141,21 @@ curl http://8.148.191.211/v1beta/models \
 | Codex | `gpt-5.3-codex-spark` |
 | 图片生成 | `gpt-image-1`、`gpt-image-2` |
 
-### Gemini 分组
+### Gemini
 
 | 能力 | 模型 |
 | --- | --- |
 | 文本 | `gemini-2.5-flash`、`gemini-2.5-pro` |
 
-### Antigravity 分组
+### Antigravity
 
 | 能力 | 模型 |
 | --- | --- |
-| Claude Code | `claude-opus-4-5-thinking`、`claude-opus-4-6`、`claude-opus-4-6-thinking`、`claude-sonnet-4-6` |
-| Gemini 文本 | `gemini-2.5-flash`、`gemini-2.5-flash-lite`、`gemini-2.5-flash-thinking`、`gemini-3-flash`、`gemini-3-pro-high`、`gemini-3-pro-low`、`gemini-3-pro-preview`、`gemini-3.1-pro-low` |
-| Gemini 图片 | `gemini-3.1-flash-image`、`gemini-3.1-flash-image-preview`、`gemini-3-pro-image` |
+| Claude Code | `claude-haiku-4-5`、`claude-haiku-4-5-20251001`、`claude-opus-4-5-20251101`、`claude-opus-4-5-thinking`、`claude-opus-4-6`、`claude-opus-4-6-thinking`、`claude-opus-4-8-thinking`、`claude-sonnet-4-6` |
+| Gemini 文本 | `gemini-2.5-flash`、`gemini-2.5-flash-lite`、`gemini-2.5-flash-thinking`、`gemini-3-flash`、`gemini-3-flash-agent`、`gemini-3-flash-preview`、`gemini-3-pro-high`、`gemini-3-pro-low`、`gemini-3-pro-preview`、`gemini-3.1-flash-lite`、`gemini-3.1-pro-low`、`gemini-3.5-flash-extra-low`、`gemini-3.5-flash-low`、`gemini-pro-agent`、`gpt-oss-120b-medium` |
+| Gemini 图片 | `gemini-3.1-flash-image`、`gemini-3.1-flash-image-preview`、`gemini-3-pro-image`、`gemini-3-pro-image-preview` |
 
-注意：`/antigravity/v1/models` 和用户页都会按分组自定义模型列表展示。`claude-opus-4-7`、`claude-opus-4-8`、`claude-sonnet-4-5`、`claude-sonnet-4-5-thinking`、`gemini-2.5-flash-image`、`gemini-2.5-flash-image-preview`、`gemini-3.1-pro-high` 当前实测不可用，不要映射到这些模型。
+注意：Antigravity 模型清单按 2026-06-03 实测通过结果展示。`claude-opus-4-7`、`claude-opus-4-8`、`claude-sonnet-4-5`、`claude-sonnet-4-5-20250929`、`claude-sonnet-4-5-thinking`、`gemini-2.5-flash-image`、`gemini-2.5-flash-image-preview`、`chat_20706`、`chat_23310`、`gemini-2.5-pro`、`gemini-3.1-pro-high`、`gemini-3.1-pro-preview` 当前实测不可用或超时，不要展示给用户。
 
 ## 7. 额度说明
 

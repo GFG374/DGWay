@@ -1016,21 +1016,16 @@ export default {
   // Available Channels (user-facing)
   availableChannels: {
     title: 'Available Channels',
-    description: 'Channels you can access, along with their supported models and pricing',
+    description: 'Models you can use, with pricing',
     searchPlaceholder: 'Search channels or models...',
     empty: 'No available channels',
     noModels: 'No models configured',
     noPricing: 'Pricing not configured',
-    exclusive: 'Exclusive',
-    public: 'Public',
-    exclusiveTooltip: 'Exclusive groups granted to you by an admin',
-    publicTooltip: 'Groups open to all users',
     columns: {
       name: 'Channel',
       description: 'Description',
       platform: 'Platform',
-      groups: 'Your Accessible Groups',
-      supportedModels: 'Supported Models'
+      supportedModels: 'Available Models'
     },
     pricing: {
       billingMode: 'Billing Mode',
