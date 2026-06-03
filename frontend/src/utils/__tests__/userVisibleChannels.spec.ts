@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { UserAvailableChannel } from '@/api/channels'
-import { availableChannelsForViewer, toUserVisibleChannels } from '@/utils/userVisibleChannels'
+import {
+  availableChannelsForViewer,
+  toUserVisibleChannels,
+  toUserVisiblePlatformSections,
+} from '@/utils/userVisibleChannels'
 
 describe('userVisibleChannels', () => {
   it('splits raw Antigravity models into Claude and Gemini user-facing sections', () => {
@@ -92,5 +96,62 @@ describe('userVisibleChannels', () => {
 
     expect(availableChannelsForViewer(rows, true)).toBe(rows)
     expect(availableChannelsForViewer(rows, false)).toEqual([])
+  })
+
+  it('aggregates ordinary user display by public platform instead of raw channel name', () => {
+    const rows: UserAvailableChannel[] = [
+      {
+        name: 'Antigravity',
+        description: 'Claude Code and Antigravity Gemini image models',
+        platforms: [
+          {
+            platform: 'antigravity',
+            supported_models: [
+              {
+                name: 'claude-sonnet-4-6',
+                display_name: 'Claude Sonnet 4.6',
+                platform: 'antigravity',
+                capability: 'claude-code',
+                available: true,
+                pricing: null,
+              },
+              {
+                name: 'gemini-3-pro-image',
+                display_name: 'Gemini 3 Pro Image',
+                platform: 'antigravity',
+                capability: 'gemini-image',
+                available: true,
+                pricing: null,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'Google Gemini',
+        description: 'Gemini text and image models',
+        platforms: [
+          {
+            platform: 'gemini',
+            supported_models: [
+              {
+                name: 'gemini-3-pro-image',
+                display_name: 'Gemini 3 Pro Image',
+                platform: 'gemini',
+                capability: 'gemini-image',
+                available: true,
+                pricing: null,
+              },
+            ],
+          },
+        ],
+      },
+    ]
+
+    const sections = toUserVisiblePlatformSections(rows)
+
+    expect(sections.map((section) => section.platform)).toEqual(['anthropic', 'gemini'])
+    expect(sections[0].supported_models.map((model) => model.name)).toEqual(['claude-sonnet-4-6'])
+    expect(sections[1].supported_models.map((model) => model.name)).toEqual(['gemini-3-pro-image'])
   })
 })

@@ -34,12 +34,21 @@
 
       <template #table>
         <AvailableChannelsTable
+          v-if="authStore.isAdmin"
           :columns="columnLabels"
-          :rows="filteredChannels"
+          :rows="filteredAdminChannels"
           :loading="loading"
           pricing-key-prefix="availableChannels.pricing"
           :no-pricing-label="t('availableChannels.noPricing')"
           :no-models-label="t('availableChannels.noModels')"
+          :empty-label="t('availableChannels.empty')"
+        />
+        <UserAvailableModelsPanel
+          v-else
+          :sections="filteredUserSections"
+          :loading="loading"
+          pricing-key-prefix="availableChannels.pricing"
+          :no-pricing-label="t('availableChannels.noPricing')"
           :empty-label="t('availableChannels.empty')"
         />
       </template>
@@ -54,12 +63,13 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import AvailableChannelsTable from '@/components/channels/AvailableChannelsTable.vue'
+import UserAvailableModelsPanel from '@/components/channels/UserAvailableModelsPanel.vue'
 import userChannelsAPI, { type UserAvailableChannel } from '@/api/channels'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { userVisiblePlatformLabel } from '@/utils/userVisiblePlatform'
-import { availableChannelsForViewer } from '@/utils/userVisibleChannels'
+import { toUserVisiblePlatformSections } from '@/utils/userVisibleChannels'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -82,11 +92,10 @@ const columnLabels = computed(() => ({
  * - 否则按 platform/model 维度在 sections 里过滤，保留有匹配的 section
  * - 所有 sections 都不匹配时，渠道本身被过滤掉
  */
-const filteredChannels = computed(() => {
+const filteredAdminChannels = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
-  const visibleChannels = availableChannelsForViewer(channels.value, authStore.isAdmin)
-  if (!q) return visibleChannels
-  return visibleChannels
+  if (!q) return channels.value
+  return channels.value
     .map((ch) => {
       const nameHit = ch.name.toLowerCase().includes(q)
       const descHit = (ch.description || '').toLowerCase().includes(q)
@@ -106,6 +115,27 @@ const filteredChannels = computed(() => {
       return { ...ch, platforms: matchingSections }
     })
     .filter((ch): ch is UserAvailableChannel => ch !== null)
+})
+
+const filteredUserSections = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  const sections = toUserVisiblePlatformSections(channels.value)
+  if (!q) return sections
+  return sections
+    .map((section) => {
+      const platformHit =
+        section.platform.toLowerCase().includes(q) ||
+        userVisiblePlatformLabel(section.platform).toLowerCase().includes(q)
+      if (platformHit) return section
+      const supported_models = section.supported_models.filter(
+        (model) =>
+          model.name.toLowerCase().includes(q) ||
+          (model.display_name || '').toLowerCase().includes(q) ||
+          (model.capability || '').toLowerCase().includes(q),
+      )
+      return supported_models.length > 0 ? { ...section, supported_models } : null
+    })
+    .filter((section): section is NonNullable<typeof section> => section !== null)
 })
 
 async function loadChannels() {

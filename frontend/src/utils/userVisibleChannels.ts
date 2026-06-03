@@ -1,4 +1,4 @@
-import type { UserAvailableChannel } from '@/api/channels'
+import type { UserAvailableChannel, UserChannelPlatformSection } from '@/api/channels'
 import {
   USER_VISIBLE_PLATFORM_ORDER,
   type UserVisiblePlatform,
@@ -52,4 +52,34 @@ export function availableChannelsForViewer(
   isAdmin: boolean,
 ): UserAvailableChannel[] {
   return isAdmin ? list : toUserVisibleChannels(list)
+}
+
+export function toUserVisiblePlatformSections(list: UserAvailableChannel[]): UserChannelPlatformSection[] {
+  const byPlatform = new Map<string, UserChannelPlatformSection>()
+  const seen = new Set<string>()
+
+  for (const channel of toUserVisibleChannels(list)) {
+    for (const section of channel.platforms) {
+      if (!byPlatform.has(section.platform)) {
+        byPlatform.set(section.platform, {
+          platform: section.platform,
+          supported_models: [],
+        })
+      }
+
+      const target = byPlatform.get(section.platform)
+      for (const model of section.supported_models) {
+        const key = `${section.platform}:${model.name.toLowerCase()}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        target?.supported_models.push(model)
+      }
+    }
+  }
+
+  return [...byPlatform.values()].sort((a, b) => {
+    const ai = USER_VISIBLE_PLATFORM_ORDER.indexOf(a.platform as UserVisiblePlatform)
+    const bi = USER_VISIBLE_PLATFORM_ORDER.indexOf(b.platform as UserVisiblePlatform)
+    return ai - bi
+  })
 }
