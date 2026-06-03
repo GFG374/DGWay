@@ -4,8 +4,8 @@
       ref="triggerEl"
       :class="[
         'inline-flex cursor-help items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium transition-colors',
-        effectivePlatform
-          ? platformBadgeClass(effectivePlatform)
+        visualPlatform
+          ? platformBadgeClass(visualPlatform)
           : 'border-gray-200 bg-gray-50 text-gray-700 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300',
       ]"
       @mouseenter="onEnter"
@@ -15,8 +15,8 @@
       tabindex="0"
     >
       <PlatformIcon
-        v-if="effectivePlatform"
-        :platform="effectivePlatform as GroupPlatform"
+        v-if="visualPlatform"
+        :platform="visualPlatform as GroupPlatform"
         size="xs"
       />
       <span
@@ -63,7 +63,7 @@
         >
           <span class="truncate font-semibold">{{ model.display_name || model.name }}</span>
           <span
-            v-if="model.platform"
+            v-if="showPlatform && model.platform"
             class="flex-shrink-0 rounded bg-white/70 px-1.5 py-0.5 text-[10px] uppercase tracking-wide dark:bg-dark-900/60"
           >
             {{ model.platform }}
@@ -199,6 +199,7 @@ import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import type { GroupPlatform } from '@/types'
 import { platformBadgeClass, platformBorderClass, platformBadgeLightClass } from '@/utils/platformColors'
 import { modelCapabilityLabel, modelStatusLabel } from '@/utils/availableModelDisplay'
+import { nativeModelPlatform } from '@/utils/modelNativePlatform'
 
 const props = withDefaults(
   defineProps<{
@@ -222,6 +223,9 @@ const props = withDefaults(
 )
 
 const effectivePlatform = computed<string>(() => props.model.platform || props.platformHint || '')
+const visualPlatform = computed<string>(() =>
+  nativeModelPlatform(props.model.name, effectivePlatform.value),
+)
 
 const { t } = useI18n()
 
@@ -231,13 +235,13 @@ const perMillionScale = 1_000_000
 // Popover border + header classes echo the platform theme so each card reads
 // at a glance which model family it belongs to.
 const popoverBorderClass = computed(() =>
-  effectivePlatform.value
-    ? platformBorderClass(effectivePlatform.value)
+  visualPlatform.value
+    ? platformBorderClass(visualPlatform.value)
     : 'border-gray-200 dark:border-dark-600',
 )
 const popoverHeaderClass = computed(() =>
-  effectivePlatform.value
-    ? platformBadgeLightClass(effectivePlatform.value)
+  visualPlatform.value
+    ? platformBadgeLightClass(visualPlatform.value)
     : 'bg-gray-50 text-gray-700 dark:bg-dark-700/60 dark:text-gray-300',
 )
 
