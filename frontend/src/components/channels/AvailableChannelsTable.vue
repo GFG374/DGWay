@@ -66,7 +66,7 @@
               ]"
             >
               <PlatformIcon :platform="section.platform as GroupPlatform" size="xs" />
-              {{ section.platform }}
+              {{ userVisiblePlatformLabel(section.platform) }}
             </span>
           </td>
 
@@ -100,6 +100,7 @@ import SupportedModelChip from './SupportedModelChip.vue'
 import type { UserAvailableChannel } from '@/api/channels'
 import type { GroupPlatform } from '@/types'
 import { platformBadgeClass } from '@/utils/platformColors'
+import { userVisiblePlatformLabel } from '@/utils/userVisiblePlatform'
 
 defineProps<{
   columns: {

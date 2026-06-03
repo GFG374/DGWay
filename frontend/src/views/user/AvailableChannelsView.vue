@@ -56,10 +56,14 @@ import Icon from '@/components/icons/Icon.vue'
 import AvailableChannelsTable from '@/components/channels/AvailableChannelsTable.vue'
 import userChannelsAPI, { type UserAvailableChannel } from '@/api/channels'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import { userVisiblePlatformLabel } from '@/utils/userVisiblePlatform'
+import { availableChannelsForViewer } from '@/utils/userVisibleChannels'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 
 const channels = ref<UserAvailableChannel[]>([])
 const loading = ref(false)
@@ -80,8 +84,9 @@ const columnLabels = computed(() => ({
  */
 const filteredChannels = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return channels.value
-  return channels.value
+  const visibleChannels = availableChannelsForViewer(channels.value, authStore.isAdmin)
+  if (!q) return visibleChannels
+  return visibleChannels
     .map((ch) => {
       const nameHit = ch.name.toLowerCase().includes(q)
       const descHit = (ch.description || '').toLowerCase().includes(q)
@@ -89,6 +94,7 @@ const filteredChannels = computed(() => {
       const matchingSections = ch.platforms.filter(
         (p) =>
           p.platform.toLowerCase().includes(q) ||
+          userVisiblePlatformLabel(p.platform).toLowerCase().includes(q) ||
           p.supported_models.some(
             (m) =>
               m.name.toLowerCase().includes(q) ||
