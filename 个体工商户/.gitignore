@@ -1,0 +1,16 @@
+# Keep private application materials out of Git.
+private/
+scans/
+filled/
+身份证*
+银行卡*
+营业执照*
+房产证*
+租赁合同*
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.pdf
+*.zip
+*.rar
