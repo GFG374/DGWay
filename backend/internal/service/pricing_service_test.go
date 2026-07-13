@@ -100,6 +100,37 @@ func TestGetModelPricing_Gpt54UsesStaticFallbackWhenRemoteMissing(t *testing.T) 
 	require.InDelta(t, 1.5, got.LongContextOutputCostMultiplier, 1e-12)
 }
 
+func TestGetModelPricing_Gpt56UsesDedicatedStaticFallbacks(t *testing.T) {
+	svc := &PricingService{
+		pricingData: map[string]*LiteLLMModelPricing{
+			"gpt-5.1-codex": {InputCostPerToken: 1.25e-6},
+		},
+	}
+
+	cases := []struct {
+		model       string
+		inputPrice  float64
+		outputPrice float64
+		cacheRead   float64
+	}{
+		{model: "gpt-5.6", inputPrice: 5e-6, outputPrice: 3e-5, cacheRead: 5e-7},
+		{model: "gpt-5.6-sol", inputPrice: 5e-6, outputPrice: 3e-5, cacheRead: 5e-7},
+		{model: "gpt-5.6-terra", inputPrice: 2.5e-6, outputPrice: 1.5e-5, cacheRead: 2.5e-7},
+		{model: "gpt-5.6-luna", inputPrice: 1e-6, outputPrice: 6e-6, cacheRead: 1e-7},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.model, func(t *testing.T) {
+			got := svc.GetModelPricing(tt.model)
+			require.NotNil(t, got)
+			require.InDelta(t, tt.inputPrice, got.InputCostPerToken, 1e-12)
+			require.InDelta(t, tt.outputPrice, got.OutputCostPerToken, 1e-12)
+			require.InDelta(t, tt.cacheRead, got.CacheReadInputTokenCost, 1e-12)
+			require.Equal(t, 272000, got.LongContextInputTokenThreshold)
+		})
+	}
+}
+
 func TestGetModelPricing_OpenAICompactAliasUsesStaticFallback(t *testing.T) {
 	svc := &PricingService{
 		pricingData: map[string]*LiteLLMModelPricing{

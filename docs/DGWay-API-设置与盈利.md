@@ -405,9 +405,11 @@ DGWay API 已经具备一个完整 AI 中转站的雏形。接下来要做的是
 
 | 类型 | 模型 |
 | --- | --- |
-| 聊天 | `gpt-5.4`、`gpt-5.4-mini` |
+| 聊天 | `gpt-5.6`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`、`gpt-5.4`、`gpt-5.4-mini` |
 | Codex | `gpt-5.3-codex-spark` |
 | 图片生成 | `gpt-image-1`、`gpt-image-2` |
+
+`gpt-5.6` 默认归一到 `gpt-5.6-sol`。`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna` 已加入本地候选列表和计费兜底，但 OpenAI OAuth 账号不能依赖“同步上游支持的模型”按钮实时获取，需要后台手动加入白名单。调用失败时先检查账号是否实际拥有 GPT-5.6 权限。
 
 GPT 聊天、Codex、图片生成在 DGWay 里应该按不同模型和后台分组计费。图片生成要单独控制，因为成本更高，不建议默认开放给所有用户。
 

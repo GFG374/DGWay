@@ -78,7 +78,7 @@ Antigravity 当前不要使用 `Opus 4.8`。建议这样映射：
 | --- | --- |
 | Base URL | `https://dgth.shop/v1` |
 | API Key | 你的 DGWay API Key |
-| Chat 模型 | `gpt-5.4` 或 `gpt-5.4-mini` |
+| Chat 模型 | `gpt-5.6`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`；兼容选项为 `gpt-5.4` 或 `gpt-5.4-mini` |
 | Codex 模型 | `gpt-5.3-codex-spark` |
 | 图片模型 | `gpt-image-1` 或 `gpt-image-2` |
 
@@ -137,9 +137,11 @@ curl https://dgth.shop/v1beta/models \
 
 | 能力 | 模型 |
 | --- | --- |
-| 聊天 | `gpt-5.4`、`gpt-5.4-mini` |
+| 聊天 | `gpt-5.6`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`、`gpt-5.4`、`gpt-5.4-mini` |
 | Codex | `gpt-5.3-codex-spark` |
 | 图片生成 | `gpt-image-1`、`gpt-image-2` |
+
+OpenAI OAuth 账号的后台“同步上游支持的模型”按钮当前不适用，管理员需要在账号白名单或分组模型列表里手动加入 `gpt-5.6` 系列。是否能成功调用，最终取决于该 OpenAI 账号本身是否已经获得 GPT-5.6 权限。
 
 ### Gemini
 
