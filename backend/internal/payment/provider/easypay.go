@@ -273,11 +273,11 @@ func (e *EasyPay) createJYLTPayment(ctx context.Context, req payment.CreatePayme
 		}
 		return nil, fmt.Errorf("easypay jylt error: %s", msg)
 	}
-	payURL := strings.ReplaceAll(strings.TrimSpace(resp.Data.PayURL), `\u003d`, "=")
+	payURL, qrCode := resolveJYLTPaymentTargets(resp.Data.PayURL)
 	return &payment.CreatePaymentResponse{
 		TradeNo: resp.Data.OrderID,
 		PayURL:  payURL,
-		QRCode:  payURL,
+		QRCode:  qrCode,
 	}, nil
 }
 
@@ -315,6 +315,19 @@ func (e *EasyPay) resolveJYLTCreateURLs(req payment.CreatePaymentRequest) (strin
 		returnURL = ""
 	}
 	return notifyURL, returnURL
+}
+
+func resolveJYLTPaymentTargets(rawPayURL string) (string, string) {
+	raw := strings.ReplaceAll(strings.TrimSpace(rawPayURL), `\u003d`, "=")
+	if raw == "" {
+		return "", ""
+	}
+	if parsed, err := url.Parse(raw); err == nil {
+		if embedded := strings.TrimSpace(parsed.Query().Get("url")); embedded != "" {
+			return "", embedded
+		}
+	}
+	return "", raw
 }
 
 func (e *EasyPay) QueryOrder(ctx context.Context, tradeNo string) (*payment.QueryOrderResponse, error) {

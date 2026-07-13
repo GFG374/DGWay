@@ -29,7 +29,7 @@ func TestEasyPayJYLTCreatePayment(t *testing.T) {
 			"data": map[string]any{
 				"payId":   "sub2_100",
 				"orderId": "cloud-100",
-				"payUrl":  "https://qr.alipay.example/code",
+				"payUrl":  "https://epay.jylt.cc/api/enQrcode?url=alipayqr%3A%2F%2Fplatformapi%2Fstartapp%3FsaId%3D10000007%26qrcode%3Dencoded",
 				"state":   0,
 			},
 		})
@@ -47,8 +47,8 @@ func TestEasyPayJYLTCreatePayment(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "cloud-100", resp.TradeNo)
-	require.Equal(t, "https://qr.alipay.example/code", resp.PayURL)
-	require.Equal(t, resp.PayURL, resp.QRCode)
+	require.Empty(t, resp.PayURL)
+	require.Equal(t, "alipayqr://platformapi/startapp?saId=10000007&qrcode=encoded", resp.QRCode)
 	require.Equal(t, "mch-test-001", createForm.Get("mchId"))
 	require.Equal(t, "sub2_100", createForm.Get("payId"))
 	require.Equal(t, "sub2_100", createForm.Get("param"))
@@ -70,7 +70,7 @@ func TestEasyPayJYLTCreatePaymentUsesConfiguredShortReturnURL(t *testing.T) {
 			"data": map[string]any{
 				"payId":   "sub2_100",
 				"orderId": "cloud-100",
-				"payUrl":  "https://qr.weixin.example/code",
+				"payUrl":  "https://epay.jylt.cc/api/enQrcode?url=wxp%3A%2F%2Ff2f0test",
 				"state":   0,
 			},
 		})
