@@ -111,6 +111,7 @@ flowchart TD
 | Payment Mode | `qrcode` |
 
 JYLT 易支付的签名必须通过 `https://epay.jylt.cc/api/generateSign` 生成，不能本地直接 MD5。DGWay 已在服务端适配这一点。
+JYLT 的 `qrcode` 模式只依赖异步回调入账，同步回调保持 `https://dgth.shop/payment/result` 这种短地址即可，不要填写带 `order_id` 或 `resume_token` 的长链接。
 
 ## 4. 管理后台配置清单
 

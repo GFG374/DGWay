@@ -56,6 +56,40 @@ func TestEasyPayJYLTCreatePayment(t *testing.T) {
 	require.Equal(t, "0", createForm.Get("isHtml"))
 }
 
+func TestEasyPayJYLTCreatePaymentUsesConfiguredShortReturnURL(t *testing.T) {
+	t.Parallel()
+
+	var createForm url.Values
+	server := newJYLTTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/api/createOrder", r.URL.Path)
+		require.NoError(t, r.ParseForm())
+		createForm = r.PostForm
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 1,
+			"msg":  "success",
+			"data": map[string]any{
+				"payId":   "sub2_100",
+				"orderId": "cloud-100",
+				"payUrl":  "https://qr.weixin.example/code",
+				"state":   0,
+			},
+		})
+	})
+	defer server.Close()
+
+	prov := newJYLTProviderForTest(t, server.URL)
+	_, err := prov.CreatePayment(context.Background(), payment.CreatePaymentRequest{
+		OrderID:     "sub2_100",
+		Amount:      "0.01",
+		PaymentType: payment.TypeWxpay,
+		Subject:     "DGWay Standard",
+		NotifyURL:   "https://dgth.shop/api/v1/payment/webhook/easypay",
+		ReturnURL:   "https://dgth.shop/payment/result?order_id=1&out_trade_no=sub2_100&resume_token=very-long-token-that-should-not-be-sent-to-jylt-because-the-provider-only-needs-a-short-configured-return-url-for-json-qr-code-mode&status=success",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "https://dgth.shop/payment/result", createForm.Get("returnUrl"))
+}
+
 func TestEasyPayJYLTQueryOrderPaid(t *testing.T) {
 	t.Parallel()
 

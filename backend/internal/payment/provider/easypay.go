@@ -34,6 +34,7 @@ const (
 	jyltPayTypeWxpay       = "1"
 	jyltPayTypeAlipay      = "2"
 	jyltOrderStatePaid     = 1
+	jyltMaxCallbackURLSize = 200
 )
 
 // EasyPay implements payment.Provider for the EasyPay aggregation platform.
@@ -228,7 +229,7 @@ func (e *EasyPay) createJYLTPayment(ctx context.Context, req payment.CreatePayme
 	if err != nil {
 		return nil, err
 	}
-	notifyURL, returnURL := e.resolveURLs(req)
+	notifyURL, returnURL := e.resolveJYLTCreateURLs(req)
 	price := strings.TrimSpace(req.Amount)
 	param := strings.TrimSpace(req.OrderID)
 	sign, err := e.generateJYLTSign(ctx, req.OrderID+param+payType+price+e.config["secret"])
@@ -290,6 +291,28 @@ func (e *EasyPay) resolveURLs(req payment.CreatePaymentRequest) (string, string)
 	returnURL := req.ReturnURL
 	if returnURL == "" {
 		returnURL = e.config["returnUrl"]
+	}
+	return notifyURL, returnURL
+}
+
+func (e *EasyPay) resolveJYLTCreateURLs(req payment.CreatePaymentRequest) (string, string) {
+	notifyURL := strings.TrimSpace(req.NotifyURL)
+	if notifyURL == "" {
+		notifyURL = strings.TrimSpace(e.config["notifyUrl"])
+	}
+	if len(notifyURL) > jyltMaxCallbackURLSize {
+		notifyURL = ""
+	}
+
+	// JYLT JSON QR mode (isHtml=0) completes through async notify only.
+	// DGWay may pass a long resume return URL for browser recovery; keep that
+	// out of createOrder because JYLT rejects callback URLs over 200 chars.
+	returnURL := strings.TrimSpace(e.config["returnUrl"])
+	if returnURL == "" {
+		returnURL = strings.TrimSpace(req.ReturnURL)
+	}
+	if len(returnURL) > jyltMaxCallbackURLSize {
+		returnURL = ""
 	}
 	return notifyURL, returnURL
 }
