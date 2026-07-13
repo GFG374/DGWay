@@ -364,7 +364,7 @@ func TestValidateProviderNotificationMetadataRejectsEasyPaySnapshotMismatch(t *t
 	err := validateProviderNotificationMetadata(order, payment.TypeEasyPay, map[string]string{
 		"pid": "pid-other",
 	})
-	assert.ErrorContains(t, err, "easypay pid mismatch")
+	assert.ErrorContains(t, err, "easypay merchant id mismatch")
 }
 
 func TestValidateProviderNotificationMetadataRejectsAirwallexSnapshotMismatch(t *testing.T) {

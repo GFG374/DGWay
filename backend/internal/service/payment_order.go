@@ -290,7 +290,7 @@ func buildPaymentOrderProviderSnapshot(sel *payment.InstanceSelection, req Creat
 		}
 	}
 	if providerKey == payment.TypeEasyPay {
-		if merchantID := strings.TrimSpace(sel.Config["pid"]); merchantID != "" {
+		if merchantID := strings.TrimSpace(firstNonEmpty(sel.Config["pid"], sel.Config["mchId"])); merchantID != "" {
 			snapshot["merchant_id"] = merchantID
 		}
 	}

@@ -6,13 +6,13 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| API 入口 | `http://8.148.191.211` |
-| OpenAI-compatible Base URL | `http://8.148.191.211/v1` |
-| Gemini-compatible Base URL | `http://8.148.191.211/v1beta` |
-| Antigravity Claude Code Base URL | `http://8.148.191.211` |
+| API 入口 | `https://dgth.shop` |
+| OpenAI-compatible Base URL | `https://dgth.shop/v1` |
+| Gemini-compatible Base URL | `https://dgth.shop/v1beta` |
+| Antigravity Claude Code Base URL | `https://dgth.shop` |
 | API Key | 在 DGWay API 的“API 密钥”页面创建 |
 
-如果后续换成正式域名和 HTTPS，只需要把上面的 IP 地址替换成正式域名。
+当前正式入口已经使用域名和 HTTPS。客户端不要再填写旧 IP 地址。
 
 ## 2. 创建 API Key
 
@@ -34,7 +34,7 @@
 | --- | --- |
 | 供应商名称 | `DGWay` |
 | API Key | 你的 DGWay API Key |
-| 请求地址 | `http://8.148.191.211` |
+| 请求地址 | `https://dgth.shop` |
 | API 格式 | `Anthropic Messages` |
 | 认证字段 | `ANTHROPIC_AUTH_TOKEN` |
 
@@ -44,7 +44,7 @@
 {
   "env": {
     "ANTHROPIC_AUTH_TOKEN": "sk-你的APIKey",
-    "ANTHROPIC_BASE_URL": "http://8.148.191.211"
+    "ANTHROPIC_BASE_URL": "https://dgth.shop"
   },
   "theme": "auto"
 }
@@ -76,7 +76,7 @@ Antigravity 当前不要使用 `Opus 4.8`。建议这样映射：
 
 | 项目 | 填写 |
 | --- | --- |
-| Base URL | `http://8.148.191.211/v1` |
+| Base URL | `https://dgth.shop/v1` |
 | API Key | 你的 DGWay API Key |
 | Chat 模型 | `gpt-5.4` 或 `gpt-5.4-mini` |
 | Codex 模型 | `gpt-5.3-codex-spark` |
@@ -85,7 +85,7 @@ Antigravity 当前不要使用 `Opus 4.8`。建议这样映射：
 文本测试：
 
 ```bash
-curl http://8.148.191.211/v1/chat/completions \
+curl https://dgth.shop/v1/chat/completions \
   -H "Authorization: Bearer sk-你的APIKey" \
   -H "Content-Type: application/json" \
   -d '{
@@ -99,7 +99,7 @@ curl http://8.148.191.211/v1/chat/completions \
 图片测试：
 
 ```bash
-curl http://8.148.191.211/v1/images/generations \
+curl https://dgth.shop/v1/images/generations \
   -H "Authorization: Bearer sk-你的APIKey" \
   -H "Content-Type: application/json" \
   -d '{
@@ -116,14 +116,14 @@ curl http://8.148.191.211/v1/images/generations \
 
 | 项目 | 填写 |
 | --- | --- |
-| Base URL | `http://8.148.191.211/v1beta` |
+| Base URL | `https://dgth.shop/v1beta` |
 | API Key | 你的 Gemini 分组 DGWay API Key |
 | 文本模型 | `gemini-2.5-flash`、`gemini-2.5-pro` |
 
 Gemini 文本测试：
 
 ```bash
-curl http://8.148.191.211/v1beta/models \
+curl https://dgth.shop/v1beta/models \
   -H "Authorization: Bearer sk-你的APIKey"
 ```
 
@@ -164,7 +164,21 @@ curl http://8.148.191.211/v1beta/models \
 - Google 官方没有给普通 OAuth 场景提供完整用量查询接口，DGWay 页面里的 Gemini 配额是调度参考，最终以 Google 实际报错为准。
 - Antigravity 的 Claude Code 模型和 Antigravity 的 Gemini 图片模型也要分开看，建议分组隔离。
 
-## 8. 用户排错顺序
+## 8. 购买套餐
+
+如果账号页面里显示“订阅套餐”或“余额充值”，可以直接选择套餐后扫码支付。
+
+| 步骤 | 说明 |
+| --- | --- |
+| 选择套餐 | 确认套餐名称、有效期、额度和价格 |
+| 选择支付方式 | 支持支付宝或微信扫码，具体以页面展示为准 |
+| 扫码付款 | 付款金额要和页面金额一致 |
+| 等待回调 | 支付成功后页面会自动刷新订单状态 |
+| 未到账 | 先点击订单查询/刷新；仍未到账时，把订单号发给管理员 |
+
+支付二维码通常有有效期，超时后重新下单即可。不要重复支付同一个过期订单。
+
+## 9. 用户排错顺序
 
 请求失败时按这个顺序检查：
 

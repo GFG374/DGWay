@@ -30,6 +30,10 @@ const (
 	signTypeMD5            = "MD5"
 	paymentModePopup       = "popup"
 	deviceMobile           = "mobile"
+	easyPayStyleJYLT       = "jylt"
+	jyltPayTypeWxpay       = "1"
+	jyltPayTypeAlipay      = "2"
+	jyltOrderStatePaid     = 1
 )
 
 // EasyPay implements payment.Provider for the EasyPay aggregation platform.
@@ -40,9 +44,14 @@ type EasyPay struct {
 }
 
 // NewEasyPay creates a new EasyPay provider.
-// config keys: pid, pkey, apiBase, notifyUrl, returnUrl, cid, cidAlipay, cidWxpay
+// Standard config keys: pid, pkey, apiBase, notifyUrl, returnUrl, cid, cidAlipay, cidWxpay.
+// Jylt config keys: apiStyle=jylt, mchId, secret, apiBase, notifyUrl, returnUrl.
 func NewEasyPay(instanceID string, config map[string]string) (*EasyPay, error) {
-	for _, k := range []string{"pid", "pkey", "apiBase", "notifyUrl", "returnUrl"} {
+	required := []string{"pid", "pkey", "apiBase", "notifyUrl", "returnUrl"}
+	if isJYLTEasyPayConfig(config) {
+		required = []string{"mchId", "secret", "apiBase", "notifyUrl", "returnUrl"}
+	}
+	for _, k := range required {
 		if strings.TrimSpace(config[k]) == "" {
 			return nil, fmt.Errorf("easypay config missing required key: %s", k)
 		}
@@ -57,6 +66,16 @@ func NewEasyPay(instanceID string, config map[string]string) (*EasyPay, error) {
 		config:     cfg,
 		httpClient: &http.Client{Timeout: easypayHTTPTimeout},
 	}, nil
+}
+
+func isJYLTEasyPayConfig(config map[string]string) bool {
+	if config == nil {
+		return false
+	}
+	if strings.EqualFold(strings.TrimSpace(config["apiStyle"]), easyPayStyleJYLT) {
+		return true
+	}
+	return strings.TrimSpace(config["mchId"]) != "" || strings.TrimSpace(config["secret"]) != ""
 }
 
 func normalizeEasyPayAPIBase(apiBase string) string {
@@ -102,6 +121,13 @@ func (e *EasyPay) MerchantIdentityMetadata() map[string]string {
 	if e == nil {
 		return nil
 	}
+	if e.isJYLT() {
+		mchID := strings.TrimSpace(e.config["mchId"])
+		if mchID == "" {
+			return nil
+		}
+		return map[string]string{"mchId": mchID}
+	}
 	pid := strings.TrimSpace(e.config["pid"])
 	if pid == "" {
 		return nil
@@ -110,6 +136,9 @@ func (e *EasyPay) MerchantIdentityMetadata() map[string]string {
 }
 
 func (e *EasyPay) CreatePayment(ctx context.Context, req payment.CreatePaymentRequest) (*payment.CreatePaymentResponse, error) {
+	if e.isJYLT() {
+		return e.createJYLTPayment(ctx, req)
+	}
 	// Payment mode determined by instance config, not payment type.
 	// "popup" → hosted page (submit.php); "qrcode"/default → API call (mapi.php).
 	mode := e.config["paymentMode"]
@@ -190,6 +219,67 @@ func (e *EasyPay) createAPIPayment(ctx context.Context, req payment.CreatePaymen
 	return &payment.CreatePaymentResponse{TradeNo: resp.TradeNo, PayURL: payURL, QRCode: resp.QRCode}, nil
 }
 
+func (e *EasyPay) isJYLT() bool {
+	return e != nil && isJYLTEasyPayConfig(e.config)
+}
+
+func (e *EasyPay) createJYLTPayment(ctx context.Context, req payment.CreatePaymentRequest) (*payment.CreatePaymentResponse, error) {
+	payType, err := jyltPaymentType(req.PaymentType)
+	if err != nil {
+		return nil, err
+	}
+	notifyURL, returnURL := e.resolveURLs(req)
+	price := strings.TrimSpace(req.Amount)
+	param := strings.TrimSpace(req.OrderID)
+	sign, err := e.generateJYLTSign(ctx, req.OrderID+param+payType+price+e.config["secret"])
+	if err != nil {
+		return nil, fmt.Errorf("easypay jylt sign: %w", err)
+	}
+	params := map[string]string{
+		"mchId":     e.config["mchId"],
+		"payId":     req.OrderID,
+		"type":      payType,
+		"price":     price,
+		"sign":      sign,
+		"goodsName": trimJYLTGoodsName(req.Subject),
+		"param":     param,
+		"isHtml":    "0",
+		"notifyUrl": notifyURL,
+		"returnUrl": returnURL,
+	}
+
+	body, err := e.post(ctx, e.apiBase()+"/api/createOrder", params)
+	if err != nil {
+		return nil, fmt.Errorf("easypay jylt create: %w", err)
+	}
+	var resp struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+		Data struct {
+			PayID   string `json:"payId"`
+			OrderID string `json:"orderId"`
+			PayURL  string `json:"payUrl"`
+			State   int    `json:"state"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("easypay jylt parse: %w", err)
+	}
+	if resp.Code != easypayCodeSuccess {
+		msg := strings.TrimSpace(resp.Msg)
+		if msg == "" {
+			msg = summarizeEasyPayResponse(body)
+		}
+		return nil, fmt.Errorf("easypay jylt error: %s", msg)
+	}
+	payURL := strings.ReplaceAll(strings.TrimSpace(resp.Data.PayURL), `\u003d`, "=")
+	return &payment.CreatePaymentResponse{
+		TradeNo: resp.Data.OrderID,
+		PayURL:  payURL,
+		QRCode:  payURL,
+	}, nil
+}
+
 // resolveURLs returns (notifyURL, returnURL) preferring request values,
 // falling back to instance config.
 func (e *EasyPay) resolveURLs(req payment.CreatePaymentRequest) (string, string) {
@@ -205,6 +295,9 @@ func (e *EasyPay) resolveURLs(req payment.CreatePaymentRequest) (string, string)
 }
 
 func (e *EasyPay) QueryOrder(ctx context.Context, tradeNo string) (*payment.QueryOrderResponse, error) {
+	if e.isJYLT() {
+		return e.queryJYLTOrder(ctx, tradeNo)
+	}
 	params := map[string]string{
 		"act": "order", "pid": e.config["pid"],
 		"key": e.config["pkey"], "out_trade_no": tradeNo,
@@ -235,7 +328,51 @@ func (e *EasyPay) QueryOrder(ctx context.Context, tradeNo string) (*payment.Quer
 	}, nil
 }
 
-func (e *EasyPay) VerifyNotification(_ context.Context, rawBody string, _ map[string]string) (*payment.PaymentNotification, error) {
+func (e *EasyPay) queryJYLTOrder(ctx context.Context, tradeNo string) (*payment.QueryOrderResponse, error) {
+	body, err := e.post(ctx, e.apiBase()+"/api/getOrder", map[string]string{
+		"payId": tradeNo,
+		"mchId": e.config["mchId"],
+	})
+	if err != nil {
+		return nil, fmt.Errorf("easypay jylt query: %w", err)
+	}
+	var resp struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+		Data struct {
+			PayID       string  `json:"payId"`
+			OrderID     string  `json:"orderId"`
+			Price       float64 `json:"price"`
+			ReallyPrice float64 `json:"reallyPrice"`
+			State       int     `json:"state"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("easypay jylt parse query: %w", err)
+	}
+	if resp.Code != easypayCodeSuccess {
+		return nil, fmt.Errorf("easypay jylt query error: %s", firstNonEmpty(resp.Msg, summarizeEasyPayResponse(body)))
+	}
+	status := payment.ProviderStatusPending
+	if resp.Data.State == jyltOrderStatePaid {
+		status = payment.ProviderStatusPaid
+	}
+	amount := resp.Data.ReallyPrice
+	if amount == 0 {
+		amount = resp.Data.Price
+	}
+	return &payment.QueryOrderResponse{
+		TradeNo:  firstNonEmpty(resp.Data.OrderID, tradeNo),
+		Status:   status,
+		Amount:   amount,
+		Metadata: e.MerchantIdentityMetadata(),
+	}, nil
+}
+
+func (e *EasyPay) VerifyNotification(ctx context.Context, rawBody string, _ map[string]string) (*payment.PaymentNotification, error) {
+	if e.isJYLT() {
+		return e.verifyJYLTNotification(ctx, rawBody)
+	}
 	values, err := url.ParseQuery(rawBody)
 	if err != nil {
 		return nil, fmt.Errorf("parse notify: %w", err)
@@ -271,7 +408,49 @@ func (e *EasyPay) VerifyNotification(_ context.Context, rawBody string, _ map[st
 	}, nil
 }
 
+func (e *EasyPay) verifyJYLTNotification(ctx context.Context, rawBody string) (*payment.PaymentNotification, error) {
+	values, err := url.ParseQuery(rawBody)
+	if err != nil {
+		return nil, fmt.Errorf("parse jylt notify: %w", err)
+	}
+	params := make(map[string]string)
+	for k := range values {
+		params[k] = values.Get(k)
+	}
+	sign := strings.TrimSpace(params["sign"])
+	if sign == "" {
+		return nil, fmt.Errorf("missing sign")
+	}
+	signInput := params["orderId"] + params["param"] + params["type"] + params["price"] + params["reallyPrice"] + e.config["secret"]
+	expected, err := e.generateJYLTSign(ctx, signInput)
+	if err != nil {
+		return nil, fmt.Errorf("easypay jylt notify sign: %w", err)
+	}
+	if !hmac.Equal([]byte(expected), []byte(sign)) {
+		return nil, fmt.Errorf("invalid signature")
+	}
+	amount, _ := strconv.ParseFloat(firstNonEmpty(params["reallyPrice"], params["price"]), 64)
+	metadata := e.MerchantIdentityMetadata()
+	if mchID := strings.TrimSpace(params["mchId"]); mchID != "" {
+		if metadata == nil {
+			metadata = map[string]string{}
+		}
+		metadata["mchId"] = mchID
+	}
+	return &payment.PaymentNotification{
+		TradeNo:  params["orderId"],
+		OrderID:  params["param"],
+		Amount:   amount,
+		Status:   payment.ProviderStatusSuccess,
+		RawData:  rawBody,
+		Metadata: metadata,
+	}, nil
+}
+
 func (e *EasyPay) Refund(ctx context.Context, req payment.RefundRequest) (*payment.RefundResponse, error) {
+	if e.isJYLT() {
+		return nil, fmt.Errorf("easypay jylt refund is not supported")
+	}
 	attempts := e.refundAttempts(req)
 	if len(attempts) == 0 {
 		return nil, fmt.Errorf("easypay refund missing order identifier")
@@ -407,6 +586,57 @@ func (e *EasyPay) resolveCID(paymentType string) string {
 		return v
 	}
 	return e.config["cid"]
+}
+
+func (e *EasyPay) generateJYLTSign(ctx context.Context, param string) (string, error) {
+	body, err := e.post(ctx, e.apiBase()+"/api/generateSign", map[string]string{"param": param})
+	if err != nil {
+		return "", err
+	}
+	var resp struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+		Data string `json:"data"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return "", fmt.Errorf("parse sign response: %w", err)
+	}
+	if resp.Code != easypayCodeSuccess || strings.TrimSpace(resp.Data) == "" {
+		return "", fmt.Errorf("sign failed: %s", firstNonEmpty(resp.Msg, summarizeEasyPayResponse(body)))
+	}
+	return strings.TrimSpace(resp.Data), nil
+}
+
+func jyltPaymentType(paymentType string) (string, error) {
+	switch payment.GetBasePaymentType(paymentType) {
+	case payment.TypeWxpay:
+		return jyltPayTypeWxpay, nil
+	case payment.TypeAlipay:
+		return jyltPayTypeAlipay, nil
+	default:
+		return "", fmt.Errorf("unsupported jylt payment type: %s", paymentType)
+	}
+}
+
+func trimJYLTGoodsName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "DGWay"
+	}
+	runes := []rune(name)
+	if len(runes) > 50 {
+		return string(runes[:50])
+	}
+	return name
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
 
 func (e *EasyPay) post(ctx context.Context, endpoint string, params map[string]string) ([]byte, error) {

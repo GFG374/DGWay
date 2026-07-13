@@ -6,19 +6,19 @@
 
 | 模块 | 当前状态 | 说明 |
 | --- | --- | --- |
-| 服务器 | 已部署 | 阿里云 Ubuntu 24.04，公网 IP：`8.148.191.211` |
-| 访问入口 | 已可用 | 当前测试地址：`http://8.148.191.211` |
-| 后台入口 | 已可用 | 管理后台：`http://8.148.191.211/admin/dashboard` |
-| Sub2API 服务 | 已运行 | 本机监听 `127.0.0.1:8080`，由 Nginx 代理到公网 80 端口 |
-| Nginx | 已运行 | 负责公网访问、静态 Logo、favicon 与反向代理 |
+| 服务器 | 已部署 | LightNode 海外 Ubuntu 24.04，公网 IP：`149.104.69.175` |
+| 访问入口 | 已可用 | 正式地址：`https://dgth.shop` |
+| 后台入口 | 已可用 | 管理后台：`https://dgth.shop/admin/dashboard` |
+| Sub2API 服务 | 已运行 | Docker 容器监听 `8080`，由 Nginx 代理到公网 80/443 |
+| Nginx | 已运行 | 负责 HTTPS、HTTP 跳转 HTTPS、敏感探测路径拦截与反向代理 |
 | 代理 | 已配置 | `mihomo-japan-local`，地址 `http://127.0.0.1:7890` |
 | 账号池 | 已有测试账号 | 当前已有 1 个 OpenAI OAuth 账号，适合测试，不适合正式开放 |
 | 图片生成 | 已验证 | `openai-default` 分组已允许图片生成，`gpt-image-2` 测试通过 |
-| GitHub 登录 | 已配置 | 需要确保 GitHub OAuth callback 与当前访问地址完全一致 |
-| Google 登录 | 已配置 | 正式上线建议配域名与 HTTPS 后再稳定使用 |
-| 域名/HTTPS | 未完成 | 当前最重要缺口 |
-| 订阅套餐 | 未完成 | 当前还没有正式套餐与用户订阅规则 |
-| 支付 | 未完成 | 后续盈利必须补齐支付或人工收款流程 |
+| GitHub 登录 | 已配置 | DGWay 内部 callback 已更新为 `https://dgth.shop`，GitHub 控制台也要同步 |
+| Google 登录 | 已配置 | DGWay 内部 callback 已更新为 `https://dgth.shop`，Google 控制台也要同步 |
+| 域名/HTTPS | 已完成 | `dgth.shop` 和 `www.dgth.shop` 已签 Let’s Encrypt 证书 |
+| 订阅套餐 | 已有雏形 | 当前已有 1 个上架套餐，后续还要补齐 trial / pro 等套餐 |
+| 支付 | 已接入 JYLT 易支付 | 已支持 `epay.jylt.cc` 的商户号/通讯密钥模式，仍需用真实小额订单做一次端到端验证 |
 
 ## 2. 系统架构理解
 
@@ -41,22 +41,23 @@ flowchart TD
 
 ### 3.1 域名与 HTTPS
 
-当前使用 IP 地址测试没有问题，但正式使用一定要配置域名和 HTTPS。原因有三个：
+当前已经切换到 `https://dgth.shop`。域名和 HTTPS 是正式使用的基础，原因有三个：
 
 - GitHub OAuth 和 Google OAuth 都依赖精确 callback，域名变化后必须同步更新。
 - Google OAuth 对 HTTP/IP 的兼容性较差，生产环境更推荐 HTTPS。
 - 用户看到“不安全”会降低信任，也不适合写进简历或演示给他人。
 
-建议域名配置完成后统一使用：
+当前统一使用：
 
 | 项目 | 建议值 |
 | --- | --- |
-| 首页 | `https://api.dgway.example.com/home` |
-| API Base URL | `https://api.dgway.example.com/v1` |
-| GitHub callback | `https://api.dgway.example.com/api/v1/auth/oauth/github/callback` |
-| Google callback | `https://api.dgway.example.com/api/v1/auth/oauth/google/callback` |
+| 首页 | `https://dgth.shop/home` |
+| API Base URL | `https://dgth.shop/v1` |
+| GitHub callback | `https://dgth.shop/api/v1/auth/oauth/github/callback` |
+| Google callback | `https://dgth.shop/api/v1/auth/oauth/google/callback` |
+| DingTalk callback | `https://dgth.shop/api/v1/auth/oauth/dingtalk/callback` |
 
-目前可以继续用 IP 地址测试，等整体流程跑通后再切换域名。
+如果外部 OAuth 控制台仍填写旧 IP 或本地地址，登录会失败；后台配置和第三方控制台必须保持一致。
 
 ### 3.2 稳定号池
 
@@ -84,7 +85,7 @@ flowchart TD
 
 ### 3.4 支付与兑换码
 
-当前还没有正式支付链路。短期可以先用“人工收款 + 兑换码/手动分配订阅”的方式跑起来。
+当前已经接入 `epay.jylt.cc` 的易支付协议。短期仍建议保留“人工收款 + 兑换码/手动分配订阅”作为兜底，因为个人收款码通道可能受二维码、订单超时、回调重试影响。
 
 推荐初期路径：
 
@@ -94,6 +95,22 @@ flowchart TD
 4. 用户登录 DGWay API。
 5. 用户兑换套餐并生成 API Key。
 6. 用户在 Cursor / Chatbox / 代码中配置 Base URL 和 API Key。
+
+如果使用 JYLT 易支付自动收款，后台填写方式如下：
+
+| 字段 | 填写 |
+| --- | --- |
+| Provider | `EasyPay` |
+| API Style | `epay.jylt.cc` |
+| 商户号 / `mchId` | 易支付后台“商户管理”里的商户 ID |
+| 通讯密钥 / `secret` | 易支付后台显示的通讯密钥，只填后台，不写进文档或 Git |
+| API Base | `https://epay.jylt.cc` |
+| 异步回调 | `https://dgth.shop/api/v1/payment/webhook/easypay` |
+| 同步回调 | `https://dgth.shop/payment/result` |
+| 支付方式 | 勾选 `alipay` 和 `wxpay` |
+| Payment Mode | `qrcode` |
+
+JYLT 易支付的签名必须通过 `https://epay.jylt.cc/api/generateSign` 生成，不能本地直接 MD5。DGWay 已在服务端适配这一点。
 
 ## 4. 管理后台配置清单
 
@@ -112,7 +129,7 @@ flowchart TD
 | GitHub 登录 | 域名 callback 正确后开启 |
 | Google 登录 | HTTPS 完成后开启 |
 | 文档地址 | 指向使用说明页或飞书文档 |
-| API Base URL | IP 阶段：`http://8.148.191.211/v1`；域名阶段换成 HTTPS |
+| API Base URL | `https://dgth.shop/v1` |
 
 注意：后台管理员密码、OAuth Client Secret、代理订阅链接不建议写进公开文档。
 
@@ -194,7 +211,7 @@ flowchart TD
 
 | 项目 | 当前测试值 |
 | --- | --- |
-| Base URL | `http://8.148.191.211/v1` |
+| Base URL | `https://dgth.shop/v1` |
 | API Key | 用户自己的 `sk-...` |
 | 文本模型 | `gpt-5.4-mini` |
 | 图片模型 | `gpt-image-2` |
@@ -233,7 +250,7 @@ flowchart TD
 2. 进入“API 密钥”。
 3. 创建一个 API Key。
 4. 在客户端中填写：
-   - Base URL：`http://8.148.191.211/v1`
+   - Base URL：`https://dgth.shop/v1`
    - API Key：自己的 `sk-...`
    - 模型：`gpt-5.4-mini`
 5. 如果要生成图片，模型选择 `gpt-image-2`，并确认自己的订阅分组允许图片生成。
@@ -243,7 +260,7 @@ flowchart TD
 ### 6.1 文本模型测试
 
 ```bash
-curl http://8.148.191.211/v1/chat/completions \
+curl https://dgth.shop/v1/chat/completions \
   -H "Authorization: Bearer sk-你的APIKey" \
   -H "Content-Type: application/json" \
   -d '{
@@ -257,7 +274,7 @@ curl http://8.148.191.211/v1/chat/completions \
 ### 6.2 图片模型测试
 
 ```bash
-curl http://8.148.191.211/v1/images/generations \
+curl https://dgth.shop/v1/images/generations \
   -H "Authorization: Bearer sk-你的APIKey" \
   -H "Content-Type: application/json" \
   -d '{
@@ -340,20 +357,20 @@ curl http://8.148.191.211/v1/images/generations \
 - 让测试用户创建 API Key。
 - 用文本模型和图片模型各测试一次。
 
-### 第二阶段：补齐域名和 HTTPS
+### 第二阶段：补齐域名和 HTTPS（已完成）
 
-- 解析域名到 `8.148.191.211`。
-- 配置 Nginx HTTPS。
-- 更新 DGWay API 系统设置里的 Base URL。
-- 更新 GitHub OAuth callback。
-- 更新 Google OAuth callback。
-- 重新测试登录。
+- `dgth.shop` / `www.dgth.shop` 已解析到 `149.104.69.175`。
+- Nginx HTTPS 已配置，HTTP 会跳转到 HTTPS。
+- DGWay API 系统设置里的 Base URL 已更新为 `https://dgth.shop/v1`。
+- GitHub / Google / DingTalk 的 DGWay 内部 callback 已更新。
+- 仍需在 GitHub、Google、DingTalk 控制台同步填写新 callback。
 
 ### 第三阶段：设计套餐和盈利
 
 - 创建 `trial`、`standard`、`pro` 分组。
-- 创建订阅套餐。
+- 当前已有 `Standard` 上架套餐，继续补齐试用包和进阶包。
 - 创建兑换码。
+- 在 `管理后台 -> 系统设置 -> 支付设置` 创建易支付服务商实例。如果是 `epay.jylt.cc`，选择 `API Style = epay.jylt.cc`，填写 `mchId`、`secret`、`API Base = https://epay.jylt.cc` 和 DGWay 回调地址。
 - 让 3-5 个小伙伴试用。
 - 观察错误率、成本和模型使用偏好。
 

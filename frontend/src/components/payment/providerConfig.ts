@@ -112,8 +112,14 @@ export const PROVIDER_CALLBACK_PATHS: Record<string, CallbackPaths> = {
 /** Per-provider config fields (excludes notifyUrl/returnUrl which are handled separately). */
 export const PROVIDER_CONFIG_FIELDS: Record<string, ConfigFieldDef[]> = {
   easypay: [
-    { key: 'pid', label: 'PID', sensitive: false },
-    { key: 'pkey', label: 'PKey', sensitive: true },
+    { key: 'apiStyle', label: '', sensitive: false, optional: true, defaultValue: 'standard', hintKey: 'admin.settings.payment.field_apiStyleHint', options: [
+      { value: 'standard', label: 'Standard EasyPay' },
+      { value: 'jylt', label: 'epay.jylt.cc' },
+    ] },
+    { key: 'pid', label: 'PID', sensitive: false, optional: true },
+    { key: 'pkey', label: 'PKey', sensitive: true, optional: true },
+    { key: 'mchId', label: '', sensitive: false, optional: true },
+    { key: 'secret', label: '', sensitive: true, optional: true },
     { key: 'apiBase', label: '', sensitive: false },
     { key: 'cidAlipay', label: '', sensitive: false, optional: true },
     { key: 'cidWxpay', label: '', sensitive: false, optional: true },

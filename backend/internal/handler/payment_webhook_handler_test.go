@@ -161,6 +161,12 @@ func TestExtractOutTradeNo(t *testing.T) {
 			want:        "sub2_123",
 		},
 		{
+			name:        "easypay jylt callback payload",
+			providerKey: "easypay",
+			rawBody:     "mchId=mch-test-001&orderId=cloud_123&param=sub2_789&type=2&price=0.01&reallyPrice=0.01",
+			want:        "sub2_789",
+		},
+		{
 			name:        "alipay query payload",
 			providerKey: "alipay",
 			rawBody:     "notify_time=2026-04-20+12%3A00%3A00&out_trade_no=sub2_456",
