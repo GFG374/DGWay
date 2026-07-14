@@ -202,6 +202,7 @@ export interface CreateOrderResult {
   payment_type?: string
   out_trade_no?: string
   payment_mode?: string
+  payment_hint?: string
   resume_token?: string
   oauth?: WechatOAuthInfo
   jsapi?: WechatJSAPIPayload

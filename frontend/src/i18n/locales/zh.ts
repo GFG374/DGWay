@@ -6936,6 +6936,9 @@ export default {
       alipay_direct: '支付宝（直连）',
       wxpay_direct: '微信支付（直连）',
     },
+    hints: {
+      manualAmountRequired: '当前支付通道需要手动输入金额，请付款时核对金额后再完成支付。',
+    },
     status: {
       pending: '待支付',
       paid: '已支付',

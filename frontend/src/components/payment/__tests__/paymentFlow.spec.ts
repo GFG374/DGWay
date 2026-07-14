@@ -79,6 +79,21 @@ describe('decidePaymentLaunch', () => {
     expect(decision.recovery.outTradeNo).toBe('')
   })
 
+  it('keeps payment hints from create order response', () => {
+    const decision = decidePaymentLaunch(createOrderResult({
+      qr_code: 'alipayqr://platformapi/startapp',
+      payment_hint: 'manual_amount_required',
+    }), {
+      visibleMethod: 'alipay',
+      orderType: 'balance',
+      isMobile: false,
+    })
+
+    expect(decision.kind).toBe('qr_waiting')
+    expect(decision.paymentState.paymentHint).toBe('manual_amount_required')
+    expect(decision.recovery.paymentHint).toBe('manual_amount_required')
+  })
+
   it('routes Stripe button click to the full Payment Element without a preselected sub-method', () => {
     const decision = decidePaymentLaunch(createOrderResult({
       client_secret: 'cs_test',

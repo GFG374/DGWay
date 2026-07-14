@@ -90,6 +90,37 @@ func TestEasyPayJYLTCreatePaymentUsesConfiguredShortReturnURL(t *testing.T) {
 	require.Equal(t, "https://dgth.shop/payment/result", createForm.Get("returnUrl"))
 }
 
+func TestEasyPayJYLTCreatePaymentMarksManualAmountQRCode(t *testing.T) {
+	t.Parallel()
+
+	server := newJYLTTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/api/createOrder", r.URL.Path)
+		require.NoError(t, r.ParseForm())
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 1,
+			"msg":  "success",
+			"data": map[string]any{
+				"payId":   "sub2_100",
+				"orderId": "cloud-100",
+				"payUrl":  "https://epay.jylt.cc/api/enQrcode?url=alipayqr%3A%2F%2Fplatformapi%2Fstartapp",
+				"isAuto":  1,
+				"state":   0,
+			},
+		})
+	})
+	defer server.Close()
+
+	prov := newJYLTProviderForTest(t, server.URL)
+	resp, err := prov.CreatePayment(context.Background(), payment.CreatePaymentRequest{
+		OrderID:     "sub2_100",
+		Amount:      "0.01",
+		PaymentType: payment.TypeAlipay,
+		Subject:     "DGWay Standard",
+	})
+	require.NoError(t, err)
+	require.Equal(t, payment.PaymentHintManualAmountRequired, resp.PaymentHint)
+}
+
 func TestEasyPayJYLTQueryOrderPaid(t *testing.T) {
 	t.Parallel()
 

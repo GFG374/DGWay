@@ -113,6 +113,7 @@ flowchart TD
 JYLT 易支付的签名必须通过 `https://epay.jylt.cc/api/generateSign` 生成，不能本地直接 MD5。DGWay 已在服务端适配这一点。
 JYLT 的 `qrcode` 模式只依赖异步回调入账，同步回调保持 `https://dgth.shop/payment/result` 这种短地址即可，不要填写带 `order_id` 或 `resume_token` 的长链接。
 JYLT 返回的 `payUrl` 可能是二维码图片地址，DGWay 会从图片地址中提取真正的微信/支付宝支付码，不会让用户扫码后只打开二维码图片。
+如果 JYLT 返回 `isAuto=1`，说明这个二维码通道仍需要用户在支付宝或微信里手动输入金额。DGWay 会在支付页提示用户核对金额；如果希望自动带出金额，需要改用支持动态金额的通道，例如标准易支付/ZPAY 或支付宝、微信官方直连。
 
 ## 4. 管理后台配置清单
 

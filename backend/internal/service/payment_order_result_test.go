@@ -50,6 +50,33 @@ func TestBuildCreateOrderResponseDefaultsToOrderCreated(t *testing.T) {
 	}
 }
 
+func TestBuildCreateOrderResponseCopiesPaymentHint(t *testing.T) {
+	t.Parallel()
+
+	resp := buildCreateOrderResponse(
+		&dbent.PaymentOrder{
+			ID:         43,
+			Amount:     0.01,
+			FeeRate:    0,
+			ExpiresAt:  time.Date(2026, 4, 16, 12, 0, 0, 0, time.UTC),
+			OutTradeNo: "sub2_43",
+		},
+		CreateOrderRequest{PaymentType: payment.TypeAlipay},
+		0.01,
+		&payment.InstanceSelection{PaymentMode: "qrcode"},
+		&payment.CreatePaymentResponse{
+			TradeNo:     "cloud-43",
+			QRCode:      "alipayqr://platformapi/startapp",
+			PaymentHint: payment.PaymentHintManualAmountRequired,
+		},
+		payment.CreatePaymentResultOrderCreated,
+	)
+
+	if resp.PaymentHint != payment.PaymentHintManualAmountRequired {
+		t.Fatalf("payment_hint = %q, want %q", resp.PaymentHint, payment.PaymentHintManualAmountRequired)
+	}
+}
+
 func TestBuildCreateOrderResponseCopiesJSAPIPayload(t *testing.T) {
 	t.Parallel()
 

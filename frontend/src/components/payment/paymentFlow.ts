@@ -46,6 +46,7 @@ export interface PaymentRecoverySnapshot {
   payAmount: number
   orderType: OrderType | ''
   paymentMode: string
+  paymentHint: string
   resumeToken: string
   createdAt: number
 }
@@ -161,6 +162,7 @@ export function decidePaymentLaunch(
     payAmount: result.pay_amount,
     orderType: context.orderType,
     paymentMode: (result.payment_mode || '').trim(),
+    paymentHint: (result.payment_hint || '').trim(),
     resumeToken: result.resume_token || '',
   }, context.now)
 
@@ -278,6 +280,7 @@ export function readPaymentRecoverySnapshot(
       || (parsed.paymentEnv != null && typeof parsed.paymentEnv !== 'string')
       || typeof parsed.payAmount !== 'number'
       || typeof parsed.paymentMode !== 'string'
+      || (parsed.paymentHint != null && typeof parsed.paymentHint !== 'string')
       || typeof parsed.resumeToken !== 'string'
       || typeof parsed.createdAt !== 'number'
     ) {
@@ -309,6 +312,7 @@ export function readPaymentRecoverySnapshot(
       payAmount: parsed.payAmount,
       orderType: parsed.orderType === 'subscription' ? 'subscription' : 'balance',
       paymentMode: parsed.paymentMode,
+      paymentHint: parsed.paymentHint || '',
       resumeToken: parsed.resumeToken,
       createdAt: parsed.createdAt,
     }

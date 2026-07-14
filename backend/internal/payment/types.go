@@ -119,6 +119,13 @@ const (
 	CreatePaymentResultJSAPIReady    CreatePaymentResultType = "jsapi_ready"
 )
 
+// PaymentHint carries non-fatal provider guidance for the frontend.
+type PaymentHint = string
+
+const (
+	PaymentHintManualAmountRequired PaymentHint = "manual_amount_required"
+)
+
 // WechatOAuthInfo describes the next step when WeChat OAuth is required before payment.
 type WechatOAuthInfo struct {
 	AuthorizeURL string `json:"authorize_url,omitempty"`
@@ -150,6 +157,7 @@ type CreatePaymentResponse struct {
 	CountryCode  string                  // 服务商收银台国家/地区代码
 	PaymentEnv   string                  // 服务商前端环境标识
 	ResultType   CreatePaymentResultType // Typed result contract for frontend flows
+	PaymentHint  PaymentHint             // Non-fatal payment guidance for frontend display
 	OAuth        *WechatOAuthInfo        // WeChat OAuth bootstrap payload when required
 	JSAPI        *WechatJSAPIPayload     // WeChat JSAPI invocation payload when ready
 }

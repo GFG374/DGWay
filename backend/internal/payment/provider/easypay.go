@@ -260,6 +260,7 @@ func (e *EasyPay) createJYLTPayment(ctx context.Context, req payment.CreatePayme
 			PayID   string `json:"payId"`
 			OrderID string `json:"orderId"`
 			PayURL  string `json:"payUrl"`
+			IsAuto  int    `json:"isAuto"`
 			State   int    `json:"state"`
 		} `json:"data"`
 	}
@@ -275,10 +276,18 @@ func (e *EasyPay) createJYLTPayment(ctx context.Context, req payment.CreatePayme
 	}
 	payURL, qrCode := resolveJYLTPaymentTargets(resp.Data.PayURL)
 	return &payment.CreatePaymentResponse{
-		TradeNo: resp.Data.OrderID,
-		PayURL:  payURL,
-		QRCode:  qrCode,
+		TradeNo:     resp.Data.OrderID,
+		PayURL:      payURL,
+		QRCode:      qrCode,
+		PaymentHint: jyltPaymentHint(resp.Data.IsAuto),
 	}, nil
+}
+
+func jyltPaymentHint(isAuto int) payment.PaymentHint {
+	if isAuto == 1 {
+		return payment.PaymentHintManualAmountRequired
+	}
+	return ""
 }
 
 // resolveURLs returns (notifyURL, returnURL) preferring request values,

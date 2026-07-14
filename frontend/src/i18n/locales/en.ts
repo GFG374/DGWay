@@ -6756,6 +6756,9 @@ export default {
       alipay_direct: 'Alipay (Direct)',
       wxpay_direct: 'WeChat Pay (Direct)',
     },
+    hints: {
+      manualAmountRequired: 'This payment channel requires entering the amount manually. Please verify the amount before paying.',
+    },
     status: {
       pending: 'Pending',
       paid: 'Paid',

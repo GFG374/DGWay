@@ -342,6 +342,7 @@ function emptyPaymentState(): PaymentRecoverySnapshot {
     payAmount: 0,
     orderType: '',
     paymentMode: '',
+    paymentHint: '',
     resumeToken: '',
     createdAt: 0,
   }
@@ -751,6 +752,10 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
       stripeRouteUrl,
       airwallexRouteUrl,
     })
+
+    if (decision.paymentState.paymentHint === 'manual_amount_required') {
+      appStore.showWarning(t('payment.hints.manualAmountRequired'))
+    }
 
     if (decision.kind === 'wechat_oauth' && decision.oauth?.authorize_url) {
       window.location.href = buildWechatOAuthAuthorizeUrl(decision.oauth.authorize_url, {
