@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DGWay API - Anime Home Preview</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-soft: #fff8fb;
+      --card: rgba(255, 255, 255, 0.9);
+      --card-strong: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: rgba(219, 39, 119, 0.14);
+      --pink: #ec4899;
+      --pink-soft: #fce7f3;
+      --violet: #8b5cf6;
+      --violet-soft: #ede9fe;
+      --blue: #38bdf8;
+      --blue-soft: #e0f2fe;
+      --gold: #f59e0b;
+      --shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+      --radius: 28px;
+      --radius-sm: 18px;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(236, 72, 153, 0.10), transparent 18%),
+        radial-gradient(circle at 88% 10%, rgba(139, 92, 246, 0.10), transparent 16%),
+        radial-gradient(circle at 88% 82%, rgba(56, 189, 248, 0.10), transparent 20%),
+        linear-gradient(180deg, #ffffff 0%, #fffafc 48%, #ffffff 100%);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .scene {
+      position: relative;
+      min-height: 100vh;
+      padding: 28px 20px 40px;
+    }
+
+    .sparkle {
+      position: absolute;
+      border-radius: 999px;
+      pointer-events: none;
+      filter: blur(0.5px);
+      opacity: 0.9;
+    }
+
+    .sparkle.one {
+      inset: 56px auto auto 34px;
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, #f9a8d4, #fb7185);
+      box-shadow: 0 0 0 10px rgba(244, 114, 182, 0.06);
+    }
+
+    .sparkle.two {
+      inset: 120px 34px auto auto;
+      width: 10px;
+      height: 10px;
+      background: linear-gradient(135deg, #93c5fd, #38bdf8);
+      box-shadow: 0 0 0 12px rgba(56, 189, 248, 0.05);
+    }
+
+    .sparkle.three {
+      inset: auto auto 120px 62px;
+      width: 12px;
+      height: 12px;
+      background: linear-gradient(135deg, #c4b5fd, #8b5cf6);
+      box-shadow: 0 0 0 10px rgba(139, 92, 246, 0.05);
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: var(--max);
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(135deg, rgba(236, 72, 153, 0.16), rgba(139, 92, 246, 0.16)),
+        #fff;
+      border: 1px solid rgba(236, 72, 153, 0.12);
+      box-shadow: 0 10px 24px rgba(236, 72, 153, 0.10);
+    }
+
+    .brand-mark svg { width: 26px; height: 26px; }
+
+    .brand-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.88);
+      color: #4b5563;
+      font-size: 13px;
+      backdrop-filter: blur(10px);
+    }
+
+    .chip::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--pink), var(--violet));
+      box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.08);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
+      align-items: stretch;
+      margin-bottom: 24px;
+    }
+
+    .hero-main,
+    .hero-side,
+    .section,
+    .status-strip {
+      background: var(--card);
+      border: 1px solid rgba(219, 39, 119, 0.12);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero-main {
+      position: relative;
+      overflow: hidden;
+      padding: 44px;
+      min-height: 430px;
+    }
+
+    .hero-main::before,
+    .hero-main::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .hero-main::before {
+      inset: auto -40px -80px auto;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.14), transparent 70%);
+    }
+
+    .hero-main::after {
+      inset: -50px auto auto -40px;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.14), transparent 72%);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.10), rgba(139, 92, 246, 0.10));
+      color: #9d174d;
+      font-size: 13px;
+      font-weight: 700;
+      width: fit-content;
+    }
+
+    .hero-title {
+      margin: 18px 0 14px;
+      font-size: clamp(36px, 5vw, 58px);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      font-weight: 900;
+      max-width: 10.5ch;
+    }
+
+    .hero-desc {
+      max-width: 42rem;
+      font-size: 17px;
+      line-height: 1.8;
+      color: #4b5563;
+      margin: 0 0 24px;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border-color 180ms ease;
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn.primary {
+      color: #fff;
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
+      box-shadow: 0 12px 28px rgba(236, 72, 153, 0.24);
+    }
+
+    .btn.secondary {
+      color: #9d174d;
+      background: #fff;
+      border-color: rgba(236, 72, 153, 0.18);
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .quick-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .flow-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(236, 72, 153, 0.1);
+      color: #374151;
+      font-size: 13px;
+    }
+
+    .flow-step {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.14), rgba(139, 92, 246, 0.14));
+      color: #9d174d;
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .hero-side {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px;
+    }
+
+    .side-canvas {
+      position: relative;
+      min-height: 250px;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.65) 32%, transparent 33%),
+        radial-gradient(circle at 78% 24%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.65) 28%, transparent 29%),
+        linear-gradient(180deg, #fdf2f8 0%, #ede9fe 100%);
+      border: 1px solid rgba(236, 72, 153, 0.10);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+      overflow: hidden;
+    }
+
+    .orbit {
+      position: absolute;
+      border-radius: 999px;
+      border: 1px dashed rgba(236, 72, 153, 0.22);
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .orbit.one { inset: 22px 26px auto auto; width: 130px; height: 130px; }
+    .orbit.two { inset: auto auto 20px 18px; width: 180px; height: 180px; animation-delay: -2s; }
+
+    .moon {
+      position: absolute;
+      right: 22px;
+      top: 28px;
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 30%, #fff 0 30%, rgba(255,255,255,0.85) 31% 100%);
+      box-shadow: 0 0 0 14px rgba(255, 255, 255, 0.22), 0 0 0 30px rgba(236, 72, 153, 0.08);
+    }
+
+    .moon::before,
+    .moon::after {
+      content: "";
+      position: absolute;
+      background: rgba(236, 72, 153, 0.18);
+      border-radius: 999px;
+    }
+
+    .moon::before { width: 11px; height: 11px; left: 18px; top: 26px; }
+    .moon::after { width: 9px; height: 9px; right: 18px; bottom: 18px; }
+
+    .character {
+      position: absolute;
+      left: 50%;
+      bottom: 24px;
+      width: 210px;
+      height: 210px;
+      transform: translateX(-50%);
+      filter: drop-shadow(0 18px 30px rgba(219, 39, 119, 0.18));
+    }
+
+    .character .head {
+      position: absolute;
+      left: 50%;
+      top: 12px;
+      width: 116px;
+      height: 116px;
+      border-radius: 42% 42% 48% 48%;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg, #fff 0%, #fff8fb 100%);
+      border: 2px solid rgba(236, 72, 153, 0.16);
+    }
+
+    .character .hair {
+      position: absolute;
+      inset: 0;
+      border-radius: 42% 42% 48% 48%;
+      background:
+        linear-gradient(180deg, rgba(236, 72, 153, 0.96) 0%, rgba(139, 92, 246, 0.88) 100%);
+      clip-path: polygon(20% 22%, 30% 8%, 46% 4%, 58% 9%, 72% 6%, 84% 18%, 92% 35%, 90% 54%, 82% 44%, 77% 60%, 68% 30%, 52% 46%, 43% 18%, 35% 44%, 26% 24%, 19% 37%, 12% 55%, 9% 33%);
+      opacity: 0.95;
+    }
+
+    .character .body {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 170px;
+      height: 118px;
+      transform: translateX(-50%);
+      border-radius: 40px 40px 30px 30px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.74) 100%);
+      border: 2px solid rgba(139, 92, 246, 0.14);
+    }
+
+    .character .ribbon {
+      position: absolute;
+      left: 50%;
+      top: 64px;
+      width: 130px;
+      height: 24px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: linear-gradient(135deg, #ec4899, #f472b6, #8b5cf6);
+      box-shadow: 0 10px 18px rgba(236, 72, 153, 0.18);
+    }
+
+    .character .ribbon::before,
+    .character .ribbon::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 26px;
+      height: 26px;
+      transform: translateY(-50%) rotate(45deg);
+      border-radius: 8px;
+      background: inherit;
+    }
+
+    .character .ribbon::before { left: -12px; }
+    .character .ribbon::after { right: -12px; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      padding: 24px;
+      border-radius: var(--radius-sm);
+      background: var(--card-strong);
+      border: 1px solid rgba(219, 39, 119, 0.12);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+      min-height: 180px;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: auto -26px -30px auto;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.10), transparent 70%);
+    }
+
+    .card-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 16px;
+    }
+
+    .card-icon svg { width: 26px; height: 26px; }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      padding: 22px;
+      align-items: center;
+    }
+
+    .status-left {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .status-title {
+      margin: 0 12px 0 0;
+      font-size: 15px;
+      font-weight: 800;
+      color: #111827;
+    }
+
+    .status-badge {
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #fff;
+      border: 1px solid rgba(236, 72, 153, 0.14);
+      color: #4b5563;
+    }
+
+    .status-badge.good {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.10), rgba(16, 185, 129, 0.10));
+      color: #047857;
+      border-color: rgba(16, 185, 129, 0.18);
+    }
+
+    .status-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .mini-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 4px 0;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+
+    .footer a {
+      color: #9d174d;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.02); }
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .status-strip,
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-main {
+        padding: 32px 24px;
+        min-height: auto;
+      }
+
+      .hero-side {
+        min-height: 360px;
+      }
+
+      .topbar,
+      .footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .chip-row,
+      .status-right {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .scene {
+        padding: 18px 14px 28px;
+      }
+
+      .brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+      }
+
+      .hero-title {
+        font-size: 34px;
+        max-width: none;
+      }
+
+      .hero-desc {
+        font-size: 15px;
+      }
+
+      .card, .status-strip, .hero-main, .hero-side {
+        border-radius: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="scene">
+    <span class="sparkle one"></span>
+    <span class="sparkle two"></span>
+    <span class="sparkle three"></span>
+
+    <div class="wrap">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="url(#g1)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <defs>
+                <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ec4899" />
+                  <stop offset="100%" stop-color="#8b5cf6" />
+                </linearGradient>
+              </defs>
+              <path d="M12 3c2.1 2.3 4.9 3.8 8 4.2-1.2 1.8-1.8 3.8-1.8 5.9 0 4-2.5 7.4-6.2 8.9-3.7-1.5-6.2-4.9-6.2-8.9 0-2.1-.6-4.1-1.8-5.9 3.1-.4 5.9-1.9 8-4.2Z" />
+              <path d="M8.2 11.4c1.2-1.1 2.5-1.7 3.8-1.7 1.3 0 2.6.6 3.8 1.7" />
+              <path d="M9.1 15.1c.8.7 1.8 1.1 2.9 1.1s2.1-.4 2.9-1.1" />
+            </svg>
+          </div>
+          <div class="brand-copy">
+            <div class="brand-title">DGWay API</div>
+            <div class="brand-sub">Anime-inspired home preview</div>
+          </div>
+        </div>
+
+        <div class="chip-row" aria-label="status chips">
+          <span class="chip">白色主视觉</span>
+          <span class="chip">轻二次元风格</span>
+          <span class="chip">订阅 / 支付 / 模型</span>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="hero-main">
+          <div class="eyebrow">
+            <span aria-hidden="true">✦</span>
+            <span>DGWay 统一入口</span>
+          </div>
+
+          <h1 class="hero-title">把订阅、支付和模型权限，收进一个干净的首页</h1>
+          <p class="hero-desc">
+            这是一个白色主基调、带一点日系氛围的首页草稿。它适合放在你现在的
+            “首页内容”里，既像正式产品首页，又不会太花，方便用户一眼找到登录、订阅和文档入口。
+          </p>
+
+          <div class="cta-row">
+            <a class="btn primary" href="#start" onclick="return false;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+              进入控制台
+            </a>
+            <a class="btn secondary" href="#docs" onclick="return false;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 18v-6" />
+                <path d="M12 8h.01" />
+                <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              查看文档
+            </a>
+          </div>
+
+          <div class="quick-flow" id="start">
+            <div class="flow-item"><span class="flow-step">1</span>登录账号</div>
+            <div class="flow-item"><span class="flow-step">2</span>选择套餐</div>
+            <div class="flow-item"><span class="flow-step">3</span>完成支付</div>
+            <div class="flow-item"><span class="flow-step">4</span>开始使用</div>
+          </div>
+        </div>
+
+        <aside class="hero-side" aria-label="preview card">
+          <div class="side-canvas">
+            <div class="orbit one"></div>
+            <div class="orbit two"></div>
+            <div class="moon" aria-hidden="true"></div>
+            <div class="character" aria-hidden="true">
+              <div class="body"></div>
+              <div class="head">
+                <div class="hair"></div>
+              </div>
+              <div class="ribbon"></div>
+            </div>
+          </div>
+          <div>
+            <h2 style="margin: 18px 0 8px; font-size: 22px; line-height: 1.15;">清爽，但不空</h2>
+            <p class="mini-note" style="margin: 0 0 14px;">
+              留白足够，重点信息足够，适合做你的首页内容预览。
+            </p>
+            <div class="status-left">
+              <span class="status-badge good">Cloudflare 已启用</span>
+              <span class="status-badge">GitHub / Google 登录</span>
+              <span class="status-badge">EasyPay / JYLT</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="card-grid" aria-label="feature cards">
+        <article class="card">
+          <div class="card-icon" style="background: linear-gradient(135deg, var(--pink-soft), #fff);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#db2777" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4" y="5" width="16" height="14" rx="3" />
+              <path d="M8 9h8" />
+              <path d="M8 13h5" />
+            </svg>
+          </div>
+          <h3>订阅管理</h3>
+          <p>把用户套餐、额度、分组和状态整合成一个入口，减少来回跳转。</p>
+        </article>
+
+        <article class="card">
+          <div class="card-icon" style="background: linear-gradient(135deg, var(--violet-soft), #fff);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v18" />
+              <path d="M17 7.5c0-1.9-2.2-3.5-5-3.5S7 5.6 7 7.5 9.2 11 12 11s5 1.6 5 3.5S14.8 18 12 18s-5-1.6-5-3.5" />
+            </svg>
+          </div>
+          <h3>支付接入</h3>
+          <p>为支付宝、微信和后续的支付方式预留统一说明位，清楚又不拥挤。</p>
+        </article>
+
+        <article class="card">
+          <div class="card-icon" style="background: linear-gradient(135deg, var(--blue-soft), #fff);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 6h16" />
+              <path d="M7 6v12" />
+              <path d="M17 6v12" />
+              <path d="M4 18h16" />
+            </svg>
+          </div>
+          <h3>模型权限</h3>
+          <p>适合展示支持模型、可用状态和用户限制，让产品显得更完整。</p>
+        </article>
+      </section>
+
+      <section class="status-strip" aria-label="site status">
+        <div>
+          <div class="status-left">
+            <p class="status-title">当前状态</p>
+            <span class="status-badge good">站点在线</span>
+            <span class="status-badge">白底 / 轻二次元</span>
+            <span class="status-badge">适合 iframe / HTML</span>
+          </div>
+          <p class="mini-note" style="margin-top: 12px;">
+            这版刻意保留了足够多的白色空间，避免视觉过满；如果你喜欢，我下一版可以再帮你做得更像“动漫官网首页”，再加一点更明显的角色感和氛围感。
+          </p>
+        </div>
+        <div class="status-right" id="docs">
+          <a class="btn secondary" href="#start" onclick="return false;">返回顶部</a>
+          <a class="btn primary" href="#login" onclick="return false;">马上体验</a>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div>DGWay API · home content preview</div>
+        <div>如果这版方向对了，我可以直接给你输出可粘贴的 HTML 纯文本版。</div>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>
