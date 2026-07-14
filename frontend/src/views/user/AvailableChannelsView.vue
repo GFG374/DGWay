@@ -41,6 +41,7 @@
           :no-pricing-label="t('availableChannels.noPricing')"
           :no-models-label="t('availableChannels.noModels')"
           :empty-label="t('availableChannels.empty')"
+          :user-group-rates="emptyUserGroupRates"
         />
       </template>
     </TablePageLayout>
@@ -64,11 +65,13 @@ const appStore = useAppStore()
 const channels = ref<UserAvailableChannel[]>([])
 const loading = ref(false)
 const searchQuery = ref('')
+const emptyUserGroupRates: Record<number, number> = {}
 
 const columnLabels = computed(() => ({
   name: t('availableChannels.columns.name'),
   description: t('availableChannels.columns.description'),
   platform: t('availableChannels.columns.platform'),
+  groups: t('availableChannels.columns.groups'),
   supportedModels: t('availableChannels.columns.supportedModels'),
 }))
 

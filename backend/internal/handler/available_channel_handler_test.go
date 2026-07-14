@@ -91,17 +91,26 @@ func TestUserAvailableChannel_FieldWhitelist(t *testing.T) {
 		require.Truef(t, exists, "user DTO must expose %q", key)
 	}
 
-	// 验证 section 的字段：用户页只展示平台和模型，不暴露后台分组名。
+	// 验证 section 的字段（platform / groups / supported_models）。
 	rawSection, err := json.Marshal(row.Platforms[0])
 	require.NoError(t, err)
 	var sectionDecoded map[string]any
 	require.NoError(t, json.Unmarshal(rawSection, &sectionDecoded))
-	for _, key := range []string{"platform", "supported_models"} {
+	for _, key := range []string{"platform", "groups", "supported_models"} {
 		_, exists := sectionDecoded[key]
 		require.Truef(t, exists, "platform section must expose %q", key)
 	}
-	_, exists := sectionDecoded["groups"]
-	require.False(t, exists, "user platform section must not expose backend groups")
+
+	// Group DTO 暴露区分专属/公开、订阅类型、默认倍率和高峰倍率规则所需的字段，
+	// 前端据此渲染 GroupBadge 并与 API 密钥页保持一致的视觉。
+	rawGroup, err := json.Marshal(row.Platforms[0].Groups[0])
+	require.NoError(t, err)
+	var groupDecoded map[string]any
+	require.NoError(t, json.Unmarshal(rawGroup, &groupDecoded))
+	for _, key := range []string{"id", "name", "platform", "subscription_type", "rate_multiplier", "peak_rate_enabled", "peak_start", "peak_end", "peak_rate_multiplier", "is_exclusive"} {
+		_, exists := groupDecoded[key]
+		require.Truef(t, exists, "group DTO must expose %q", key)
+	}
 
 	// pricing interval 白名单：不应暴露 id / sort_order。
 	pricing := toUserPricing(&service.ChannelModelPricing{
@@ -145,43 +154,4 @@ func TestBuildPlatformSections_GroupsByPlatform(t *testing.T) {
 	require.Equal(t, int64(2), sections[0].Groups[0].ID)
 	require.Len(t, sections[0].SupportedModels, 1)
 	require.Equal(t, "claude-sonnet-4-6", sections[0].SupportedModels[0].Name)
-}
-
-func TestBuildPlatformSections_UsesCustomModelsListWhenEnabled(t *testing.T) {
-	// 分组已有自定义 /v1/models 列表时，用户页应展示扫描后写入的可用模型，
-	// 而不是继续展示渠道定价/映射里的失败或旧模型。
-	ch := service.AvailableChannel{
-		Name: "ch",
-		SupportedModels: []service.SupportedModel{
-			{Name: "gpt-5.4", Platform: "openai"},
-			{Name: "gpt-image-1", Platform: "openai"},
-			{Name: "old-failed-model", Platform: "openai"},
-		},
-	}
-	visible := []userAvailableGroup{
-		{
-			ID:       1,
-			Name:     "g-openai",
-			Platform: "openai",
-			ModelsListConfig: service.GroupModelsListConfig{
-				Enabled: true,
-				Models:  []string{"gpt-image-2", "gpt-5.4"},
-			},
-		},
-	}
-
-	sections := buildPlatformSections(ch, visible)
-
-	require.Len(t, sections, 1)
-	require.Equal(t, []string{"gpt-image-2", "gpt-5.4"}, userModelNames(sections[0].SupportedModels))
-	require.Equal(t, "image", sections[0].SupportedModels[0].Capability)
-	require.Equal(t, "chat", sections[0].SupportedModels[1].Capability)
-}
-
-func userModelNames(models []userSupportedModel) []string {
-	out := make([]string, len(models))
-	for i := range models {
-		out[i] = models[i].Name
-	}
-	return out
 }
