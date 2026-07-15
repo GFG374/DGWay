@@ -34,8 +34,16 @@
                 colorClasses(product.color).icon
               ]"
             >
+              <img
+                v-if="product.icon_image"
+                data-testid="product-icon-image"
+                :src="product.icon_image"
+                :alt="product.title"
+                class="h-8 w-8 object-contain"
+                loading="lazy"
+              />
               <svg
-                v-if="product.icon === 'openai'"
+                v-else-if="product.icon === 'openai'"
                 data-testid="openai-logo"
                 class="h-7 w-7"
                 fill="currentColor"

@@ -33,18 +33,19 @@ type AccountStoreContactConfig struct {
 }
 
 type AccountStoreProduct struct {
-	ID       string   `json:"id"`
-	Enabled  bool     `json:"enabled"`
-	Title    string   `json:"title"`
-	Subtitle string   `json:"subtitle"`
-	Price    string   `json:"price"`
-	Currency string   `json:"currency"`
-	Unit     string   `json:"unit"`
-	Badge    string   `json:"badge"`
-	Icon     string   `json:"icon"`
-	Color    string   `json:"color"`
-	Features []string `json:"features"`
-	RiskNote string   `json:"risk_note"`
+	ID        string   `json:"id"`
+	Enabled   bool     `json:"enabled"`
+	Title     string   `json:"title"`
+	Subtitle  string   `json:"subtitle"`
+	Price     string   `json:"price"`
+	Currency  string   `json:"currency"`
+	Unit      string   `json:"unit"`
+	Badge     string   `json:"badge"`
+	Icon      string   `json:"icon"`
+	IconImage string   `json:"icon_image,omitempty"`
+	Color     string   `json:"color"`
+	Features  []string `json:"features"`
+	RiskNote  string   `json:"risk_note"`
 }
 
 type AccountStoreConfig struct {

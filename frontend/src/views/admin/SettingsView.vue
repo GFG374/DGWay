@@ -5525,17 +5525,42 @@
                       </div>
                       <div>
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-                          {{ localText("图标", "Icon") }}
+                          {{ localText("商品图标", "Product icon") }}
                         </label>
-                        <select v-model="product.icon" class="input text-sm">
-                          <option value="openai">OpenAI</option>
-                          <option value="gemini">Gemini</option>
-                          <option value="smartphone">{{ localText("手机", "Phone") }}</option>
-                          <option value="residential-ip">{{ localText("住宅 IP", "Residential IP") }}</option>
-                          <option value="mail">{{ localText("邮箱", "Mail") }}</option>
-                          <option value="key">{{ localText("钥匙", "Key") }}</option>
-                          <option value="globe">{{ localText("地球", "Globe") }}</option>
-                        </select>
+                        <div class="flex min-h-[42px] items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-dark-600 dark:bg-dark-800">
+                          <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-50 text-xs text-gray-400 dark:bg-dark-700 dark:text-gray-500">
+                            <img
+                              v-if="product.icon_image"
+                              :src="product.icon_image"
+                              :alt="product.title || localText('商品图标', 'Product icon')"
+                              class="h-7 w-7 object-contain"
+                            />
+                            <span v-else>{{ localText("未传", "None") }}</span>
+                          </div>
+                          <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                            <label class="btn btn-secondary btn-xs cursor-pointer">
+                              <Icon name="upload" size="xs" class="mr-1" />
+                              {{ localText("上传图片", "Upload") }}
+                              <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp,image/gif"
+                                class="sr-only"
+                                @change="handleAccountStoreIconUpload(product, $event)"
+                              />
+                            </label>
+                            <button
+                              v-if="product.icon_image"
+                              type="button"
+                              class="btn btn-secondary btn-xs text-red-600 dark:text-red-400"
+                              @click="removeAccountStoreIcon(product)"
+                            >
+                              {{ localText("移除", "Remove") }}
+                            </button>
+                          </div>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {{ localText("系统会自动压缩为统一尺寸，前台按当前图标框展示。", "Images are compressed and rendered in the current icon frame.") }}
+                        </p>
                       </div>
                       <div>
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
@@ -9153,6 +9178,110 @@ function splitAccountStoreFeatures(raw: string): string[] {
     .split(/[，,]/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+const accountStoreIconCanvasSize = 96;
+const accountStoreIconMaxSourceBytes = 5 * 1024 * 1024;
+const accountStoreIconMaxDataUrlLength = 200 * 1024;
+
+function readAccountStoreIconFile(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Failed to read image"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadAccountStoreIconImage(dataUrl: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Failed to load image"));
+    image.src = dataUrl;
+  });
+}
+
+function accountStoreCanvasToDataURL(canvas: HTMLCanvasElement): Promise<string> {
+  return new Promise((resolve) => {
+    if (!canvas.toBlob) {
+      resolve(canvas.toDataURL("image/png"));
+      return;
+    }
+    canvas.toBlob(
+      async (blob) => {
+        if (!blob) {
+          resolve(canvas.toDataURL("image/png"));
+          return;
+        }
+        resolve(await readAccountStoreIconFile(blob));
+      },
+      "image/webp",
+      0.9,
+    );
+  });
+}
+
+async function compressAccountStoreIcon(file: File): Promise<string> {
+  const originalDataUrl = await readAccountStoreIconFile(file);
+  const image = await loadAccountStoreIconImage(originalDataUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = accountStoreIconCanvasSize;
+  canvas.height = accountStoreIconCanvasSize;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Canvas is unavailable");
+  }
+
+  context.clearRect(0, 0, accountStoreIconCanvasSize, accountStoreIconCanvasSize);
+  const sourceWidth = image.naturalWidth || image.width || accountStoreIconCanvasSize;
+  const sourceHeight = image.naturalHeight || image.height || accountStoreIconCanvasSize;
+  const scale = Math.min(
+    accountStoreIconCanvasSize / sourceWidth,
+    accountStoreIconCanvasSize / sourceHeight,
+  );
+  const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+  const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+  const targetX = Math.round((accountStoreIconCanvasSize - targetWidth) / 2);
+  const targetY = Math.round((accountStoreIconCanvasSize - targetHeight) / 2);
+  context.drawImage(image, targetX, targetY, targetWidth, targetHeight);
+
+  return accountStoreCanvasToDataURL(canvas);
+}
+
+async function handleAccountStoreIconUpload(product: AccountStoreProduct, event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement | null;
+  const file = input?.files?.[0];
+  if (input) {
+    input.value = "";
+  }
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    appStore.showError(localText("请上传图片文件。", "Please upload an image file."));
+    return;
+  }
+  if (file.size > accountStoreIconMaxSourceBytes) {
+    appStore.showError(localText("图片不能超过 5MB。", "Image must be smaller than 5MB."));
+    return;
+  }
+
+  try {
+    const iconImage = await compressAccountStoreIcon(file);
+    if (iconImage.length > accountStoreIconMaxDataUrlLength) {
+      appStore.showError(localText("图片压缩后仍然过大，请换一张更小的图。", "The compressed image is still too large."));
+      return;
+    }
+    product.icon_image = iconImage;
+    if (!product.icon) {
+      product.icon = "key";
+    }
+  } catch {
+    appStore.showError(localText("图片处理失败，请换一张 PNG、JPG、WEBP 或 GIF。", "Failed to process image."));
+  }
+}
+
+function removeAccountStoreIcon(product: AccountStoreProduct): void {
+  product.icon_image = "";
 }
 
 function createBlankAccountStoreProduct(): AccountStoreProduct {

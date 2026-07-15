@@ -122,4 +122,46 @@ describe('AccountStoreView', () => {
     await wrapper.get('[data-testid="copy-contact"]').trigger('click')
     expect(copyToClipboardMock).toHaveBeenCalledWith('123456', 'accountStore.contact.copied')
   })
+
+  it('renders an uploaded product icon image before the built-in icon', () => {
+    mockAppStore.cachedPublicSettings = {
+      account_store_config: {
+        enabled: true,
+        title: '站长自营',
+        description: '纯手搓账号，一号一 IP，稳定。',
+        status_text: '人工服务正常',
+        contact: {
+          type: 'qq',
+          value: '123456',
+          label: '联系站长购买，请添加 QQ',
+          copy_label: '复制 QQ'
+        },
+        disclaimer: '购买前请确认库存。',
+        products: [
+          {
+            id: 'claude',
+            enabled: true,
+            title: 'Claude 成品账号',
+            subtitle: '适合 Claude 使用',
+            price: '35',
+            currency: '¥',
+            unit: '/个',
+            badge: '账号服务',
+            icon: 'key',
+            icon_image: 'data:image/webp;base64,Y2xhdWRlLWljb24=',
+            color: 'purple',
+            features: ['提供登录邮箱'],
+            risk_note: ''
+          }
+        ]
+      }
+    }
+
+    const wrapper = mountView()
+
+    const image = wrapper.get('[data-testid="product-icon-image"]')
+    expect(image.attributes('src')).toBe('data:image/webp;base64,Y2xhdWRlLWljb24=')
+    expect(image.attributes('alt')).toBe('Claude 成品账号')
+    expect(wrapper.find('[name="key"]').exists()).toBe(false)
+  })
 })

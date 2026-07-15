@@ -335,6 +335,7 @@ func normalizeAccountStoreConfigForSave(cfg dto.AccountStoreConfig) (dto.Account
 		maxTextLen       = 500
 		maxFeatureCount  = 20
 		maxFeatureLength = 120
+		maxIconImageLen  = 200 * 1024
 	)
 	if len(cfg.Products) > maxProducts {
 		return cfg, errors.New("Too many account store products (max 24)")
@@ -368,6 +369,7 @@ func normalizeAccountStoreConfigForSave(cfg dto.AccountStoreConfig) (dto.Account
 		product.Unit = strings.TrimSpace(product.Unit)
 		product.Badge = strings.TrimSpace(product.Badge)
 		product.Icon = strings.TrimSpace(product.Icon)
+		product.IconImage = strings.TrimSpace(product.IconImage)
 		product.Color = strings.TrimSpace(product.Color)
 		product.RiskNote = strings.TrimSpace(product.RiskNote)
 		if product.Enabled && product.Title == "" {
@@ -390,6 +392,17 @@ func normalizeAccountStoreConfigForSave(cfg dto.AccountStoreConfig) (dto.Account
 		}
 		if product.Icon == "" {
 			product.Icon = "key"
+		}
+		if product.IconImage != "" {
+			if len(product.IconImage) > maxIconImageLen {
+				return cfg, errors.New("Account store product icon image is too large")
+			}
+			if !strings.HasPrefix(product.IconImage, "data:image/png;base64,") &&
+				!strings.HasPrefix(product.IconImage, "data:image/jpeg;base64,") &&
+				!strings.HasPrefix(product.IconImage, "data:image/webp;base64,") &&
+				!strings.HasPrefix(product.IconImage, "data:image/gif;base64,") {
+				return cfg, errors.New("Account store product icon image must be a data image")
+			}
 		}
 		if product.Color == "" {
 			product.Color = "primary"

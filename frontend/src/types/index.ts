@@ -198,6 +198,7 @@ export interface AccountStoreProduct {
   unit: string
   badge: string
   icon: 'openai' | 'gemini' | 'smartphone' | 'phone' | 'wifi' | 'residential-ip' | 'mail' | 'key' | 'globe' | string
+  icon_image?: string
   color: 'primary' | 'amber' | 'blue' | 'purple' | 'gray' | string
   features: string[]
   risk_note: string
