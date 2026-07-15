@@ -181,6 +181,38 @@ export interface CustomEndpoint {
   description: string
 }
 
+export interface AccountStoreContactConfig {
+  type: 'qq' | 'wechat' | 'email' | 'custom' | string
+  value: string
+  label: string
+  copy_label: string
+}
+
+export interface AccountStoreProduct {
+  id: string
+  enabled: boolean
+  title: string
+  subtitle: string
+  price: string
+  currency: string
+  unit: string
+  badge: string
+  icon: 'openai' | 'gemini' | 'smartphone' | 'phone' | 'wifi' | 'residential-ip' | 'mail' | 'key' | 'globe' | string
+  color: 'primary' | 'amber' | 'blue' | 'purple' | 'gray' | string
+  features: string[]
+  risk_note: string
+}
+
+export interface AccountStoreConfig {
+  enabled: boolean
+  title: string
+  description: string
+  status_text: string
+  contact: AccountStoreContactConfig
+  disclaimer: string
+  products: AccountStoreProduct[]
+}
+
 export interface LoginAgreementDocument {
   id: string
   title: string
@@ -216,6 +248,7 @@ export interface PublicSettings {
   table_page_size_options: number[]
   custom_menu_items: CustomMenuItem[]
   custom_endpoints: CustomEndpoint[]
+  account_store_config?: AccountStoreConfig
   linuxdo_oauth_enabled: boolean
   dingtalk_oauth_enabled?: boolean
   wechat_oauth_enabled: boolean

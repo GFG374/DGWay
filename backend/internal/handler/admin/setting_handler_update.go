@@ -127,20 +127,21 @@ type UpdateSettingsRequest struct {
 	GoogleOAuthFrontendRedirectURL string `json:"google_oauth_frontend_redirect_url"`
 
 	// OEM设置
-	SiteName                    string                `json:"site_name"`
-	SiteLogo                    string                `json:"site_logo"`
-	SiteSubtitle                string                `json:"site_subtitle"`
-	APIBaseURL                  string                `json:"api_base_url"`
-	ContactInfo                 string                `json:"contact_info"`
-	DocURL                      string                `json:"doc_url"`
-	HomeContent                 string                `json:"home_content"`
-	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
-	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
-	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
-	TableDefaultPageSize        int                   `json:"table_default_page_size"`
-	TablePageSizeOptions        []int                 `json:"table_page_size_options"`
-	CustomMenuItems             *[]dto.CustomMenuItem `json:"custom_menu_items"`
-	CustomEndpoints             *[]dto.CustomEndpoint `json:"custom_endpoints"`
+	SiteName                    string                  `json:"site_name"`
+	SiteLogo                    string                  `json:"site_logo"`
+	SiteSubtitle                string                  `json:"site_subtitle"`
+	APIBaseURL                  string                  `json:"api_base_url"`
+	ContactInfo                 string                  `json:"contact_info"`
+	DocURL                      string                  `json:"doc_url"`
+	HomeContent                 string                  `json:"home_content"`
+	HideCcsImportButton         bool                    `json:"hide_ccs_import_button"`
+	PurchaseSubscriptionEnabled *bool                   `json:"purchase_subscription_enabled"`
+	PurchaseSubscriptionURL     *string                 `json:"purchase_subscription_url"`
+	TableDefaultPageSize        int                     `json:"table_default_page_size"`
+	TablePageSizeOptions        []int                   `json:"table_page_size_options"`
+	CustomMenuItems             *[]dto.CustomMenuItem   `json:"custom_menu_items"`
+	CustomEndpoints             *[]dto.CustomEndpoint   `json:"custom_endpoints"`
+	AccountStoreConfig          *dto.AccountStoreConfig `json:"account_store_config"`
 
 	// 默认配置
 	DefaultConcurrency                        int                               `json:"default_concurrency"`
@@ -325,6 +326,91 @@ type UpdateSettingsRequest struct {
 	AuthSourceDingTalkPlatformQuotas map[string]*service.DefaultPlatformQuotaSetting `json:"auth_source_default_dingtalk_platform_quotas"`
 
 	AllowUserViewErrorRequests *bool `json:"allow_user_view_error_requests"`
+}
+
+func normalizeAccountStoreConfigForSave(cfg dto.AccountStoreConfig) (dto.AccountStoreConfig, error) {
+	const (
+		maxProducts      = 24
+		maxTitleLen      = 80
+		maxTextLen       = 500
+		maxFeatureCount  = 20
+		maxFeatureLength = 120
+	)
+	if len(cfg.Products) > maxProducts {
+		return cfg, errors.New("Too many account store products (max 24)")
+	}
+	if strings.TrimSpace(cfg.Title) == "" {
+		cfg.Title = dto.DefaultAccountStoreConfig().Title
+	}
+	if len(cfg.Title) > maxTitleLen {
+		return cfg, errors.New("Account store title is too long")
+	}
+	if len(cfg.Description) > maxTextLen || len(cfg.StatusText) > maxTextLen || len(cfg.Disclaimer) > maxTextLen {
+		return cfg, errors.New("Account store text is too long")
+	}
+	cfg.Contact.Type = strings.TrimSpace(cfg.Contact.Type)
+	if cfg.Contact.Type == "" {
+		cfg.Contact.Type = "qq"
+	}
+	cfg.Contact.Value = strings.TrimSpace(cfg.Contact.Value)
+	cfg.Contact.Label = strings.TrimSpace(cfg.Contact.Label)
+	cfg.Contact.CopyLabel = strings.TrimSpace(cfg.Contact.CopyLabel)
+	if len(cfg.Contact.Value) > 120 || len(cfg.Contact.Label) > maxTextLen || len(cfg.Contact.CopyLabel) > 80 {
+		return cfg, errors.New("Account store contact text is too long")
+	}
+	for i := range cfg.Products {
+		product := &cfg.Products[i]
+		product.ID = strings.TrimSpace(product.ID)
+		product.Title = strings.TrimSpace(product.Title)
+		product.Subtitle = strings.TrimSpace(product.Subtitle)
+		product.Price = strings.TrimSpace(product.Price)
+		product.Currency = strings.TrimSpace(product.Currency)
+		product.Unit = strings.TrimSpace(product.Unit)
+		product.Badge = strings.TrimSpace(product.Badge)
+		product.Icon = strings.TrimSpace(product.Icon)
+		product.Color = strings.TrimSpace(product.Color)
+		product.RiskNote = strings.TrimSpace(product.RiskNote)
+		if product.Enabled && product.Title == "" {
+			return cfg, errors.New("Enabled account store product title is required")
+		}
+		if product.ID == "" {
+			product.ID = strings.ToLower(strings.ReplaceAll(product.Title, " ", "-"))
+		}
+		if len(product.Title) > maxTitleLen || len(product.Subtitle) > maxTextLen || len(product.Badge) > 80 || len(product.RiskNote) > maxTextLen {
+			return cfg, errors.New("Account store product text is too long")
+		}
+		if strings.HasPrefix(product.Price, "-") {
+			return cfg, errors.New("Account store product price cannot be negative")
+		}
+		if product.Currency == "" {
+			product.Currency = "¥"
+		}
+		if product.Unit == "" {
+			product.Unit = "/个"
+		}
+		if product.Icon == "" {
+			product.Icon = "key"
+		}
+		if product.Color == "" {
+			product.Color = "primary"
+		}
+		if len(product.Features) > maxFeatureCount {
+			return cfg, errors.New("Too many account store product features")
+		}
+		features := make([]string, 0, len(product.Features))
+		for _, feature := range product.Features {
+			feature = strings.TrimSpace(feature)
+			if feature == "" {
+				continue
+			}
+			if len(feature) > maxFeatureLength {
+				return cfg, errors.New("Account store product feature is too long")
+			}
+			features = append(features, feature)
+		}
+		product.Features = features
+	}
+	return cfg, nil
 }
 
 // UpdateSettings 更新系统设置
@@ -1065,6 +1151,21 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		customEndpointsJSON = string(endpointBytes)
 	}
 
+	accountStoreJSON := previousSettings.AccountStoreConfig
+	if req.AccountStoreConfig != nil {
+		normalized, err := normalizeAccountStoreConfigForSave(*req.AccountStoreConfig)
+		if err != nil {
+			response.BadRequest(c, err.Error())
+			return
+		}
+		accountStoreBytes, err := json.Marshal(normalized)
+		if err != nil {
+			response.BadRequest(c, "Failed to serialize account store config")
+			return
+		}
+		accountStoreJSON = string(accountStoreBytes)
+	}
+
 	// Ops metrics collector interval validation (seconds).
 	if req.OpsMetricsIntervalSeconds != nil {
 		v := *req.OpsMetricsIntervalSeconds
@@ -1273,6 +1374,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		TablePageSizeOptions:                   req.TablePageSizeOptions,
 		CustomMenuItems:                        customMenuJSON,
 		CustomEndpoints:                        customEndpointsJSON,
+		AccountStoreConfig:                     accountStoreJSON,
 		DefaultConcurrency:                     req.DefaultConcurrency,
 		DefaultBalance:                         req.DefaultBalance,
 		AffiliateRebateRate:                    affiliateRebateRate,
@@ -1780,6 +1882,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		TablePageSizeOptions:                                   updatedSettings.TablePageSizeOptions,
 		CustomMenuItems:                                        dto.ParseCustomMenuItems(updatedSettings.CustomMenuItems),
 		CustomEndpoints:                                        dto.ParseCustomEndpoints(updatedSettings.CustomEndpoints),
+		AccountStoreConfig:                                     dto.ParseAccountStoreConfig(updatedSettings.AccountStoreConfig),
 		DefaultConcurrency:                                     updatedSettings.DefaultConcurrency,
 		DefaultBalance:                                         updatedSettings.DefaultBalance,
 		AffiliateRebateRate:                                    updatedSettings.AffiliateRebateRate,

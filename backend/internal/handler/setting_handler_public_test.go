@@ -82,6 +82,44 @@ func TestSettingHandler_GetPublicSettings_ExposesForceEmailOnThirdPartySignup(t 
 	require.True(t, resp.Data.ForceEmailOnThirdPartySignup)
 }
 
+func TestSettingHandler_GetPublicSettings_ExposesAccountStoreConfigObject(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{
+		values: map[string]string{
+			service.SettingKeyAccountStoreConfig: `{"enabled":true,"title":"站长自营","description":"纯手搓账号","status_text":"人工服务正常","contact":{"type":"qq","value":"123456","label":"联系站长购买，请添加 QQ","copy_label":"复制 QQ"},"disclaimer":"购买前请确认库存。","products":[{"id":"gemini","enabled":true,"title":"Gemini 成品账号","subtitle":"适合 Google AI 使用","price":"35","currency":"¥","unit":"/个","badge":"账号服务","icon":"gemini","color":"purple","features":["提供登录邮箱"],"risk_note":""}]}`,
+		},
+	}, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/public", nil)
+
+	h.GetPublicSettings(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	var resp struct {
+		Code int `json:"code"`
+		Data struct {
+			AccountStoreConfig struct {
+				Title   string `json:"title"`
+				Contact struct {
+					Value string `json:"value"`
+				} `json:"contact"`
+				Products []struct {
+					Title string `json:"title"`
+				} `json:"products"`
+			} `json:"account_store_config"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
+	require.Equal(t, 0, resp.Code)
+	require.Equal(t, "站长自营", resp.Data.AccountStoreConfig.Title)
+	require.Equal(t, "123456", resp.Data.AccountStoreConfig.Contact.Value)
+	require.Equal(t, "Gemini 成品账号", resp.Data.AccountStoreConfig.Products[0].Title)
+}
+
 func TestSettingHandler_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{

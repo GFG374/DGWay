@@ -185,6 +185,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyTablePageSizeOptions,
 		SettingKeyCustomMenuItems,
 		SettingKeyCustomEndpoints,
+		SettingKeyAccountStoreConfig,
 		SettingKeyLinuxDoConnectEnabled,
 		SettingKeyDingTalkConnectEnabled,
 		SettingKeyWeChatConnectEnabled,
@@ -310,6 +311,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		TablePageSizeOptions:             tablePageSizeOptions,
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],
+		AccountStoreConfig:               settings[SettingKeyAccountStoreConfig],
 		LinuxDoOAuthEnabled:              linuxDoEnabled,
 		DingTalkOAuthEnabled:             dingTalkEnabled,
 		WeChatOAuthEnabled:               weChatEnabled,
@@ -467,6 +469,7 @@ type PublicSettingsInjectionPayload struct {
 	TablePageSizeOptions             []int                    `json:"table_page_size_options"`
 	CustomMenuItems                  json.RawMessage          `json:"custom_menu_items"`
 	CustomEndpoints                  json.RawMessage          `json:"custom_endpoints"`
+	AccountStoreConfig               json.RawMessage          `json:"account_store_config"`
 	LinuxDoOAuthEnabled              bool                     `json:"linuxdo_oauth_enabled"`
 	DingTalkOAuthEnabled             bool                     `json:"dingtalk_oauth_enabled"`
 	WeChatOAuthEnabled               bool                     `json:"wechat_oauth_enabled"`
@@ -536,6 +539,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		TablePageSizeOptions:             settings.TablePageSizeOptions,
 		CustomMenuItems:                  filterUserVisibleMenuItems(settings.CustomMenuItems),
 		CustomEndpoints:                  safeRawJSONArray(settings.CustomEndpoints),
+		AccountStoreConfig:               safeRawJSONObject(settings.AccountStoreConfig),
 		LinuxDoOAuthEnabled:              settings.LinuxDoOAuthEnabled,
 		DingTalkOAuthEnabled:             settings.DingTalkOAuthEnabled,
 		WeChatOAuthEnabled:               settings.WeChatOAuthEnabled,
@@ -611,6 +615,19 @@ func safeRawJSONArray(raw string) json.RawMessage {
 		return json.RawMessage(raw)
 	}
 	return json.RawMessage("[]")
+}
+
+// safeRawJSONObject returns raw as json.RawMessage if it's a JSON object, otherwise "{}".
+func safeRawJSONObject(raw string) json.RawMessage {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return json.RawMessage("{}")
+	}
+	var obj map[string]any
+	if err := json.Unmarshal([]byte(raw), &obj); err != nil {
+		return json.RawMessage("{}")
+	}
+	return json.RawMessage(raw)
 }
 
 // GetFrameSrcOrigins returns deduplicated http(s) origins from home_content URL,

@@ -78,6 +78,20 @@ func TestSettingService_GetPublicSettings_ExposesTablePreferences(t *testing.T) 
 	require.Equal(t, []int{20, 50, 100}, settings.TablePageSizeOptions)
 }
 
+func TestSettingService_GetPublicSettings_ExposesAccountStoreConfig(t *testing.T) {
+	raw := `{"enabled":true,"title":"站长自营","description":"纯手搓账号","status_text":"人工服务正常","contact":{"type":"qq","value":"123456","label":"联系站长购买，请添加 QQ","copy_label":"复制 QQ"},"disclaimer":"购买前请确认库存。","products":[{"id":"gemini","enabled":true,"title":"Gemini 成品账号","subtitle":"适合 Google AI 使用","price":"35","currency":"¥","unit":"/个","badge":"账号服务","icon":"gemini","color":"purple","features":["提供登录邮箱","提供验证码接收网址"],"risk_note":""}]}`
+	repo := &settingPublicRepoStub{
+		values: map[string]string{
+			SettingKeyAccountStoreConfig: raw,
+		},
+	}
+	svc := NewSettingService(repo, &config.Config{})
+
+	settings, err := svc.GetPublicSettings(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, raw, settings.AccountStoreConfig)
+}
+
 func TestSettingService_GetPublicSettings_ExposesForceEmailOnThirdPartySignup(t *testing.T) {
 	repo := &settingPublicRepoStub{
 		values: map[string]string{

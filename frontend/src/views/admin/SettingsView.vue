@@ -5375,6 +5375,205 @@
             </div>
           </div>
 
+          <!-- Account Store Settings -->
+          <div class="card">
+            <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ localText("账号购买设置", "Account Store Settings") }}
+                  </h2>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ localText("配置用户端账号购买页的联系方式、商品和价格。", "Configure contact info, products, and prices for the user account store.") }}
+                  </p>
+                </div>
+                <Toggle v-model="form.account_store_config.enabled" />
+              </div>
+            </div>
+            <div class="space-y-6 p-6">
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ localText("页面标题", "Page title") }}
+                  </label>
+                  <input v-model="form.account_store_config.title" type="text" class="input" />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ localText("状态文案", "Status text") }}
+                  </label>
+                  <input v-model="form.account_store_config.status_text" type="text" class="input" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ localText("页面说明", "Page description") }}
+                  </label>
+                  <input v-model="form.account_store_config.description" type="text" class="input" />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ localText("联系方式类型", "Contact type") }}
+                  </label>
+                  <select v-model="form.account_store_config.contact.type" class="input">
+                    <option value="qq">QQ</option>
+                    <option value="wechat">{{ localText("微信", "WeChat") }}</option>
+                    <option value="email">{{ localText("邮箱", "Email") }}</option>
+                    <option value="custom">{{ localText("自定义", "Custom") }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ localText("联系方式内容", "Contact value") }}
+                  </label>
+                  <input v-model="form.account_store_config.contact.value" type="text" class="input" placeholder="484018742" />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ localText("联系提示", "Contact label") }}
+                  </label>
+                  <input v-model="form.account_store_config.contact.label" type="text" class="input" />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ localText("复制按钮文案", "Copy button label") }}
+                  </label>
+                  <input v-model="form.account_store_config.contact.copy_label" type="text" class="input" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ localText("底部说明", "Disclaimer") }}
+                  </label>
+                  <textarea v-model="form.account_store_config.disclaimer" rows="2" class="input text-sm"></textarea>
+                </div>
+              </div>
+
+              <div class="border-t border-gray-100 pt-5 dark:border-dark-700">
+                <div class="mb-4 flex items-center justify-between gap-4">
+                  <div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ localText("商品管理", "Product management") }}
+                    </h3>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{ localText("功能点用中文或英文逗号分隔，前台会自动逐行展示。桌面端默认一行 3 个商品。", "Separate features with commas. Desktop shows three products per row.") }}
+                    </p>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm" @click="addAccountStoreProduct">
+                    <Icon name="plus" size="sm" class="mr-1.5" />
+                    {{ localText("新增商品", "Add product") }}
+                  </button>
+                </div>
+
+                <div class="space-y-4">
+                  <div
+                    v-for="(product, index) in form.account_store_config.products"
+                    :key="product.id || index"
+                    class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
+                  >
+                    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div class="flex items-center gap-3">
+                        <Toggle v-model="product.enabled" />
+                        <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                          {{ product.title || localText("未命名商品", "Untitled product") }}
+                        </span>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <button v-if="index > 0" type="button" class="btn btn-secondary btn-xs" @click="moveAccountStoreProduct(index, -1)">
+                          {{ localText("上移", "Up") }}
+                        </button>
+                        <button v-if="index < form.account_store_config.products.length - 1" type="button" class="btn btn-secondary btn-xs" @click="moveAccountStoreProduct(index, 1)">
+                          {{ localText("下移", "Down") }}
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-xs" @click="duplicateAccountStoreProduct(index)">
+                          {{ localText("复制", "Copy") }}
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-xs text-red-600 dark:text-red-400" @click="removeAccountStoreProduct(index)">
+                          {{ localText("删除", "Delete") }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ localText("商品名称", "Title") }}
+                        </label>
+                        <input v-model="product.title" type="text" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ localText("标签", "Badge") }}
+                        </label>
+                        <input v-model="product.badge" type="text" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ localText("价格", "Price") }}
+                        </label>
+                        <input v-model="product.price" type="text" class="input text-sm" placeholder="30" />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ localText("单位", "Unit") }}
+                        </label>
+                        <input v-model="product.unit" type="text" class="input text-sm" placeholder="/个" />
+                      </div>
+                      <div class="md:col-span-2">
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ localText("说明", "Subtitle") }}
+                        </label>
+                        <input v-model="product.subtitle" type="text" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ localText("图标", "Icon") }}
+                        </label>
+                        <select v-model="product.icon" class="input text-sm">
+                          <option value="openai">OpenAI</option>
+                          <option value="gemini">Gemini</option>
+                          <option value="smartphone">{{ localText("手机", "Phone") }}</option>
+                          <option value="residential-ip">{{ localText("住宅 IP", "Residential IP") }}</option>
+                          <option value="mail">{{ localText("邮箱", "Mail") }}</option>
+                          <option value="key">{{ localText("钥匙", "Key") }}</option>
+                          <option value="globe">{{ localText("地球", "Globe") }}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ localText("主题色", "Color") }}
+                        </label>
+                        <select v-model="product.color" class="input text-sm">
+                          <option value="primary">{{ localText("青绿", "Primary") }}</option>
+                          <option value="amber">{{ localText("黄色", "Amber") }}</option>
+                          <option value="blue">{{ localText("蓝色", "Blue") }}</option>
+                          <option value="purple">{{ localText("紫色", "Purple") }}</option>
+                          <option value="gray">{{ localText("灰色", "Gray") }}</option>
+                        </select>
+                      </div>
+                      <div class="md:col-span-2 xl:col-span-4">
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ localText("功能点", "Features") }}
+                        </label>
+                        <input
+                          :value="(product.features || []).join('，')"
+                          type="text"
+                          class="input text-sm"
+                          :placeholder="localText('提供登录邮箱，提供验证码接收网址，人工交付', 'Feature one, Feature two')"
+                          @input="setAccountStoreProductFeatures(product, ($event.target as HTMLInputElement).value)"
+                        />
+                      </div>
+                      <div class="md:col-span-2 xl:col-span-4">
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ localText("风险提示", "Risk note") }}
+                        </label>
+                        <textarea v-model="product.risk_note" rows="2" class="input text-sm"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Custom Menu Items -->
           <div class="card">
             <div
@@ -7362,6 +7561,8 @@ import type {
   WebSearchTestResult,
 } from "@/api/admin/settings";
 import type {
+  AccountStoreConfig,
+  AccountStoreProduct,
   AdminGroup,
   LoginAgreementDocument,
   NotifyEmailEntry,
@@ -8044,6 +8245,69 @@ type SettingsForm = Omit<
   default_platform_quotas: DefaultPlatformQuotasMap;
 };
 
+function createDefaultAccountStoreConfig(): AccountStoreConfig {
+  return {
+    enabled: true,
+    title: localText("站长自营", "Owner Operated"),
+    description: localText("纯手搓账号，一号一 IP，稳定。", "Manually prepared accounts, one account per IP, stable."),
+    status_text: localText("人工服务正常", "Manual service online"),
+    contact: {
+      type: "qq",
+      value: "484018742",
+      label: localText("联系管理员购买，请添加 QQ", "Contact admin to buy"),
+      copy_label: localText("复制 QQ", "Copy QQ"),
+    },
+    disclaimer: localText(
+      "购买前请与管理员确认库存、交付时间和使用要求。账号、手机号及住宅 IP 服务受第三方平台规则影响；降低风险不代表完全消除风险。",
+      "Confirm inventory, delivery time, and requirements before purchase. Accounts, phone numbers, and residential IP services are affected by third-party platform rules.",
+    ),
+    products: [
+      {
+        id: "openai",
+        enabled: true,
+        title: "OpenAI 成品账号",
+        subtitle: "独立登录信息，拿到即可使用",
+        price: "30",
+        currency: "¥",
+        unit: "/个",
+        badge: "账号服务",
+        icon: "openai",
+        color: "primary",
+        features: ["提供 OpenAI 账号登录邮箱", "提供验证码接收网址", "管理员确认后人工交付"],
+        risk_note: "",
+      },
+      {
+        id: "phone",
+        enabled: true,
+        title: "长效手机号接码",
+        subtitle: "适合需要后续再次验证的账号",
+        price: "10",
+        currency: "¥",
+        unit: "/30天",
+        badge: "30 天有效",
+        icon: "smartphone",
+        color: "amber",
+        features: ["30 天内可重复接收验证码", "最多尝试绑定 3 个 OpenAI 账号"],
+        risk_note: "实际可绑定数量受 OpenAI 风控影响，不保证一定能够绑定 3 个账号。",
+      },
+      {
+        id: "residential-ip",
+        enabled: true,
+        title: "美国静态住宅 IP",
+        subtitle: "更稳定的 AI 服务访问出口",
+        price: "40",
+        currency: "¥",
+        unit: "/30天",
+        badge: "美国静态",
+        icon: "residential-ip",
+        color: "blue",
+        features: ["美国静态住宅网络出口", "30 天使用周期", "大大降低 OpenAI 封控风险", "大大降低其他 AI 服务封控风险"],
+        risk_note: "",
+      },
+    ],
+  };
+}
+
 const form = reactive<SettingsForm>({
   registration_enabled: true,
   email_verify_enabled: false,
@@ -8103,6 +8367,7 @@ const form = reactive<SettingsForm>({
   payment_alipay_force_qrcode: false,
   table_default_page_size: tablePageSizeDefault,
   table_page_size_options: [10, 20, 50, 100],
+  account_store_config: createDefaultAccountStoreConfig(),
   custom_menu_items: [] as Array<{
     id: string;
     label: string;
@@ -8883,6 +9148,62 @@ function removeEndpoint(index: number) {
   form.custom_endpoints.splice(index, 1);
 }
 
+function splitAccountStoreFeatures(raw: string): string[] {
+  return raw
+    .split(/[，,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function createBlankAccountStoreProduct(): AccountStoreProduct {
+  return {
+    id: `product-${Date.now()}`,
+    enabled: true,
+    title: "",
+    subtitle: "",
+    price: "",
+    currency: "¥",
+    unit: "/个",
+    badge: "账号服务",
+    icon: "key",
+    color: "primary",
+    features: [],
+    risk_note: "",
+  };
+}
+
+function addAccountStoreProduct(): void {
+  form.account_store_config.products.push(createBlankAccountStoreProduct());
+}
+
+function duplicateAccountStoreProduct(index: number): void {
+  const product = form.account_store_config.products[index];
+  if (!product) return;
+  form.account_store_config.products.splice(index + 1, 0, {
+    ...product,
+    id: `${product.id || "product"}-copy-${Date.now()}`,
+    title: product.title ? `${product.title} Copy` : "",
+    features: [...(product.features || [])],
+  });
+}
+
+function removeAccountStoreProduct(index: number): void {
+  form.account_store_config.products.splice(index, 1);
+}
+
+function moveAccountStoreProduct(index: number, direction: -1 | 1): void {
+  const targetIndex = index + direction;
+  const products = form.account_store_config.products;
+  if (targetIndex < 0 || targetIndex >= products.length) return;
+  const current = products[index];
+  products[index] = products[targetIndex];
+  products[targetIndex] = current;
+}
+
+function setAccountStoreProductFeatures(product: AccountStoreProduct, raw: string): void {
+  product.features = splitAccountStoreFeatures(raw);
+}
+
 function addLoginAgreementDocument() {
   form.login_agreement_documents.push({
     id: `custom-${Date.now().toString(36)}`,
@@ -9433,6 +9754,7 @@ async function saveSettings() {
       hide_ccs_import_button: form.hide_ccs_import_button,
       table_default_page_size: form.table_default_page_size,
       table_page_size_options: form.table_page_size_options,
+      account_store_config: form.account_store_config,
       custom_menu_items: form.custom_menu_items,
       custom_endpoints: form.custom_endpoints,
       frontend_url: form.frontend_url,

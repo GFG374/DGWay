@@ -25,6 +25,38 @@ type CustomEndpoint struct {
 	Description string `json:"description"`
 }
 
+type AccountStoreContactConfig struct {
+	Type      string `json:"type"`
+	Value     string `json:"value"`
+	Label     string `json:"label"`
+	CopyLabel string `json:"copy_label"`
+}
+
+type AccountStoreProduct struct {
+	ID       string   `json:"id"`
+	Enabled  bool     `json:"enabled"`
+	Title    string   `json:"title"`
+	Subtitle string   `json:"subtitle"`
+	Price    string   `json:"price"`
+	Currency string   `json:"currency"`
+	Unit     string   `json:"unit"`
+	Badge    string   `json:"badge"`
+	Icon     string   `json:"icon"`
+	Color    string   `json:"color"`
+	Features []string `json:"features"`
+	RiskNote string   `json:"risk_note"`
+}
+
+type AccountStoreConfig struct {
+	Enabled     bool                      `json:"enabled"`
+	Title       string                    `json:"title"`
+	Description string                    `json:"description"`
+	StatusText  string                    `json:"status_text"`
+	Contact     AccountStoreContactConfig `json:"contact"`
+	Disclaimer  string                    `json:"disclaimer"`
+	Products    []AccountStoreProduct     `json:"products"`
+}
+
 // SystemSettings represents the admin settings API response payload.
 type SystemSettings struct {
 	RegistrationEnabled              bool                     `json:"registration_enabled"`
@@ -127,20 +159,21 @@ type SystemSettings struct {
 	GoogleOAuthRedirectURL            string `json:"google_oauth_redirect_url"`
 	GoogleOAuthFrontendRedirectURL    string `json:"google_oauth_frontend_redirect_url"`
 
-	SiteName                    string           `json:"site_name"`
-	SiteLogo                    string           `json:"site_logo"`
-	SiteSubtitle                string           `json:"site_subtitle"`
-	APIBaseURL                  string           `json:"api_base_url"`
-	ContactInfo                 string           `json:"contact_info"`
-	DocURL                      string           `json:"doc_url"`
-	HomeContent                 string           `json:"home_content"`
-	HideCcsImportButton         bool             `json:"hide_ccs_import_button"`
-	PurchaseSubscriptionEnabled bool             `json:"purchase_subscription_enabled"`
-	PurchaseSubscriptionURL     string           `json:"purchase_subscription_url"`
-	TableDefaultPageSize        int              `json:"table_default_page_size"`
-	TablePageSizeOptions        []int            `json:"table_page_size_options"`
-	CustomMenuItems             []CustomMenuItem `json:"custom_menu_items"`
-	CustomEndpoints             []CustomEndpoint `json:"custom_endpoints"`
+	SiteName                    string             `json:"site_name"`
+	SiteLogo                    string             `json:"site_logo"`
+	SiteSubtitle                string             `json:"site_subtitle"`
+	APIBaseURL                  string             `json:"api_base_url"`
+	ContactInfo                 string             `json:"contact_info"`
+	DocURL                      string             `json:"doc_url"`
+	HomeContent                 string             `json:"home_content"`
+	HideCcsImportButton         bool               `json:"hide_ccs_import_button"`
+	PurchaseSubscriptionEnabled bool               `json:"purchase_subscription_enabled"`
+	PurchaseSubscriptionURL     string             `json:"purchase_subscription_url"`
+	TableDefaultPageSize        int                `json:"table_default_page_size"`
+	TablePageSizeOptions        []int              `json:"table_page_size_options"`
+	CustomMenuItems             []CustomMenuItem   `json:"custom_menu_items"`
+	CustomEndpoints             []CustomEndpoint   `json:"custom_endpoints"`
+	AccountStoreConfig          AccountStoreConfig `json:"account_store_config"`
 
 	DefaultConcurrency           int                          `json:"default_concurrency"`
 	DefaultBalance               float64                      `json:"default_balance"`
@@ -330,6 +363,7 @@ type PublicSettings struct {
 	TablePageSizeOptions             []int                    `json:"table_page_size_options"`
 	CustomMenuItems                  []CustomMenuItem         `json:"custom_menu_items"`
 	CustomEndpoints                  []CustomEndpoint         `json:"custom_endpoints"`
+	AccountStoreConfig               AccountStoreConfig       `json:"account_store_config"`
 	DingTalkOAuthEnabled             bool                     `json:"dingtalk_oauth_enabled"`
 	LinuxDoOAuthEnabled              bool                     `json:"linuxdo_oauth_enabled"`
 	WeChatOAuthEnabled               bool                     `json:"wechat_oauth_enabled"`
@@ -530,4 +564,102 @@ func ParseCustomEndpoints(raw string) []CustomEndpoint {
 		return []CustomEndpoint{}
 	}
 	return items
+}
+
+func DefaultAccountStoreConfig() AccountStoreConfig {
+	return AccountStoreConfig{
+		Enabled:     true,
+		Title:       "站长自营",
+		Description: "纯手搓账号，一号一 IP，稳定。",
+		StatusText:  "人工服务正常",
+		Contact: AccountStoreContactConfig{
+			Type:      "qq",
+			Value:     "484018742",
+			Label:     "联系管理员购买，请添加 QQ",
+			CopyLabel: "复制 QQ",
+		},
+		Disclaimer: "购买前请与管理员确认库存、交付时间和使用要求。账号、手机号及住宅 IP 服务受第三方平台规则影响；降低风险不代表完全消除风险。",
+		Products: []AccountStoreProduct{
+			{
+				ID:       "openai",
+				Enabled:  true,
+				Title:    "OpenAI 成品账号",
+				Subtitle: "独立登录信息，拿到即可使用",
+				Price:    "30",
+				Currency: "¥",
+				Unit:     "/个",
+				Badge:    "账号服务",
+				Icon:     "openai",
+				Color:    "primary",
+				Features: []string{"提供 OpenAI 账号登录邮箱", "提供验证码接收网址", "管理员确认后人工交付"},
+			},
+			{
+				ID:       "phone",
+				Enabled:  true,
+				Title:    "长效手机号接码",
+				Subtitle: "适合需要后续再次验证的账号",
+				Price:    "10",
+				Currency: "¥",
+				Unit:     "/30天",
+				Badge:    "30 天有效",
+				Icon:     "smartphone",
+				Color:    "amber",
+				Features: []string{"30 天内可重复接收验证码", "最多尝试绑定 3 个 OpenAI 账号"},
+				RiskNote: "实际可绑定数量受 OpenAI 风控影响，不保证一定能够绑定 3 个账号。",
+			},
+			{
+				ID:       "residential-ip",
+				Enabled:  true,
+				Title:    "美国静态住宅 IP",
+				Subtitle: "更稳定的 AI 服务访问出口",
+				Price:    "40",
+				Currency: "¥",
+				Unit:     "/30天",
+				Badge:    "美国静态",
+				Icon:     "residential-ip",
+				Color:    "blue",
+				Features: []string{"美国静态住宅网络出口", "30 天使用周期", "大大降低 OpenAI 封控风险", "大大降低其他 AI 服务封控风险"},
+			},
+		},
+	}
+}
+
+func ParseAccountStoreConfig(raw string) AccountStoreConfig {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "{}" {
+		return DefaultAccountStoreConfig()
+	}
+	var cfg AccountStoreConfig
+	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
+		return DefaultAccountStoreConfig()
+	}
+	defaultCfg := DefaultAccountStoreConfig()
+	if cfg.Title == "" {
+		cfg.Title = defaultCfg.Title
+	}
+	if cfg.Description == "" {
+		cfg.Description = defaultCfg.Description
+	}
+	if cfg.StatusText == "" {
+		cfg.StatusText = defaultCfg.StatusText
+	}
+	if cfg.Contact.Type == "" {
+		cfg.Contact.Type = defaultCfg.Contact.Type
+	}
+	if cfg.Contact.Value == "" {
+		cfg.Contact.Value = defaultCfg.Contact.Value
+	}
+	if cfg.Contact.Label == "" {
+		cfg.Contact.Label = defaultCfg.Contact.Label
+	}
+	if cfg.Contact.CopyLabel == "" {
+		cfg.Contact.CopyLabel = defaultCfg.Contact.CopyLabel
+	}
+	if cfg.Disclaimer == "" {
+		cfg.Disclaimer = defaultCfg.Disclaimer
+	}
+	if len(cfg.Products) == 0 {
+		cfg.Products = defaultCfg.Products
+	}
+	return cfg
 }
