@@ -1,5 +1,59 @@
 export default {
 
+  accountStore: {
+    title: 'Account Store',
+    description: 'Accounts and long-term verification services',
+    hero: {
+      title: 'Operator-run Services',
+      description: 'Manually prepared accounts with one account per IP for greater stability.',
+      status: 'Manual service available'
+    },
+    units: {
+      each: '/ each',
+      thirtyDays: '/ 30 days'
+    },
+    products: {
+      openai: {
+        badge: 'Account',
+        title: 'OpenAI Ready Account',
+        subtitle: 'Independent login details, ready to use',
+        features: {
+          email: 'OpenAI login email included',
+          decoder: 'Verification-code receiver URL included',
+          delivery: 'Delivered manually after confirmation'
+        }
+      },
+      phone: {
+        badge: 'Valid for 30 days',
+        title: 'Long-term SMS Number',
+        subtitle: 'For accounts that may need later verification',
+        features: {
+          reusable: 'Receive verification codes for 30 days',
+          accounts: 'Attempt to bind up to 3 OpenAI accounts'
+        },
+        riskNote: 'The actual number of accounts depends on OpenAI risk controls. Binding 3 accounts is not guaranteed.'
+      },
+      residentialIp: {
+        badge: 'Static US IP',
+        title: 'US Static Residential IP',
+        subtitle: 'A more stable network exit for AI services',
+        features: {
+          usStatic: 'US static residential network exit',
+          period: '30-day service period',
+          openaiRisk: 'Significantly reduces OpenAI blocking risk',
+          otherAiRisk: 'Reduces blocking risk for other AI services'
+        }
+      }
+    },
+    contact: {
+      label: 'Contact the administrator on QQ to purchase',
+      copy: 'Copy QQ',
+      copied: 'QQ copied. Add the administrator on QQ.',
+      copiedShort: 'Copied'
+    },
+    disclaimer: 'Confirm stock, delivery time, and requirements with the administrator before purchasing. Account, phone, and residential IP services are subject to third-party platform rules; reduced risk does not mean zero risk.'
+  },
+
   // Subscription Progress (Header component)
   subscriptionProgress: {
     title: 'My Subscriptions',

@@ -1,5 +1,59 @@
 export default {
 
+  accountStore: {
+    title: '账号购买',
+    description: '账号与长期验证码服务',
+    hero: {
+      title: '站长自营',
+      description: '纯手搓账号，一号一 IP，稳定。',
+      status: '人工服务正常'
+    },
+    units: {
+      each: '/ 个',
+      thirtyDays: '/ 30天'
+    },
+    products: {
+      openai: {
+        badge: '账号服务',
+        title: 'OpenAI 成品账号',
+        subtitle: '独立登录信息，拿到即可使用',
+        features: {
+          email: '提供 OpenAI 账号登录邮箱',
+          decoder: '提供验证码接收网址',
+          delivery: '管理员确认后人工交付'
+        }
+      },
+      phone: {
+        badge: '30 天有效',
+        title: '长效手机号接码',
+        subtitle: '适合需要后续再次验证的账号',
+        features: {
+          reusable: '30 天内可重复接收验证码',
+          accounts: '最多尝试绑定 3 个 OpenAI 账号'
+        },
+        riskNote: '实际可绑定数量受 OpenAI 风控影响，不保证一定能够绑定 3 个账号。'
+      },
+      residentialIp: {
+        badge: '美国静态',
+        title: '美国静态住宅 IP',
+        subtitle: '更稳定的 AI 服务访问出口',
+        features: {
+          usStatic: '美国静态住宅网络出口',
+          period: '30 天使用周期',
+          openaiRisk: '大大降低 OpenAI 封控风险',
+          otherAiRisk: '大大降低其他 AI 服务封控风险'
+        }
+      }
+    },
+    contact: {
+      label: '联系管理员购买，请添加 QQ',
+      copy: '复制 QQ',
+      copied: 'QQ 已复制，请到 QQ 添加管理员',
+      copiedShort: '已复制'
+    },
+    disclaimer: '购买前请与管理员确认库存、交付时间和使用要求。账号、手机号及住宅 IP 服务受第三方平台规则影响；降低风险不代表完全消除风险。'
+  },
+
   // Subscription Progress (Header component)
   subscriptionProgress: {
     title: '我的订阅',

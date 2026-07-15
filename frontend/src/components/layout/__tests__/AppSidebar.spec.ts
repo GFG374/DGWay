@@ -53,3 +53,11 @@ describe('AppSidebar header styles', () => {
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
   })
 })
+
+describe('AppSidebar account store entry', () => {
+  it('links the shared user navigation to the account store', () => {
+    expect(componentSource).toContain("path: '/account-store'")
+    expect(componentSource).toContain("t('nav.accountStore')")
+    expect(componentSource).toContain('AccountStoreIcon')
+  })
+})
