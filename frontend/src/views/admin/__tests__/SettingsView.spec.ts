@@ -898,6 +898,38 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(Array.isArray(receivedProviders[0].supported_types)).toBe(true);
     expect(receivedProviders[0].supported_types).toEqual([]);
   });
+
+  it("keeps a trailing comma while editing a newly added account store product feature list", async () => {
+    const wrapper = mountView();
+
+    await flushPromises();
+
+    const addProductButton = wrapper
+      .findAll("button")
+      .find((node) => node.text().includes("新增商品"));
+    expect(addProductButton).toBeDefined();
+    await addProductButton?.trigger("click");
+    await flushPromises();
+
+    const featureInputs = wrapper
+      .findAll("input")
+      .filter((node) => node.attributes("placeholder")?.includes("提供登录邮箱"));
+    const newProductFeatureInput = featureInputs.at(-1);
+    expect(newProductFeatureInput).toBeDefined();
+
+    await newProductFeatureInput?.setValue("直冲个人谷歌邮箱，");
+    await flushPromises();
+
+    expect((newProductFeatureInput?.element as HTMLInputElement).value).toBe("直冲个人谷歌邮箱，");
+
+    await newProductFeatureInput?.setValue("直冲个人谷歌邮箱，支持 Gemini 使用");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    const payload = updateSettings.mock.calls[0]?.[0];
+    const addedProduct = payload.account_store_config.products.at(-1);
+    expect(addedProduct.features).toEqual(["直冲个人谷歌邮箱", "支持 Gemini 使用"]);
+  });
 });
 
 describe("admin SettingsView wechat connect controls", () => {

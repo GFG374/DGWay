@@ -5579,11 +5579,11 @@
                           {{ localText("功能点", "Features") }}
                         </label>
                         <input
-                          :value="(product.features || []).join('，')"
+                          :value="getAccountStoreProductFeaturesText(product)"
                           type="text"
                           class="input text-sm"
                           :placeholder="localText('提供登录邮箱，提供验证码接收网址，人工交付', 'Feature one, Feature two')"
-                          @input="setAccountStoreProductFeatures(product, ($event.target as HTMLInputElement).value)"
+                          @input="setAccountStoreProductFeaturesText(product, ($event.target as HTMLInputElement).value)"
                         />
                       </div>
                       <div class="md:col-span-2 xl:col-span-4">
@@ -8570,6 +8570,7 @@ const form = reactive<SettingsForm>({
   // Allow user view error requests
   allow_user_view_error_requests: false,
 });
+const accountStoreFeatureDrafts = ref(new WeakMap<AccountStoreProduct, string>());
 
 type OpenAIAdvancedSchedulerOverrideKey =
   | "openai_advanced_scheduler_lb_top_k"
@@ -9180,6 +9181,15 @@ function splitAccountStoreFeatures(raw: string): string[] {
     .filter(Boolean);
 }
 
+function getAccountStoreProductFeaturesText(product: AccountStoreProduct): string {
+  return accountStoreFeatureDrafts.value.get(product) ?? (product.features || []).join("，");
+}
+
+function setAccountStoreProductFeaturesText(product: AccountStoreProduct, raw: string): void {
+  accountStoreFeatureDrafts.value.set(product, raw);
+  product.features = splitAccountStoreFeatures(raw);
+}
+
 const accountStoreIconCanvasSize = 96;
 const accountStoreIconMaxSourceBytes = 5 * 1024 * 1024;
 const accountStoreIconMaxDataUrlLength = 200 * 1024;
@@ -9302,18 +9312,22 @@ function createBlankAccountStoreProduct(): AccountStoreProduct {
 }
 
 function addAccountStoreProduct(): void {
-  form.account_store_config.products.push(createBlankAccountStoreProduct());
+  const product = createBlankAccountStoreProduct();
+  accountStoreFeatureDrafts.value.set(product, "");
+  form.account_store_config.products.push(product);
 }
 
 function duplicateAccountStoreProduct(index: number): void {
   const product = form.account_store_config.products[index];
   if (!product) return;
-  form.account_store_config.products.splice(index + 1, 0, {
+  const duplicatedProduct = {
     ...product,
     id: `${product.id || "product"}-copy-${Date.now()}`,
     title: product.title ? `${product.title} Copy` : "",
     features: [...(product.features || [])],
-  });
+  };
+  accountStoreFeatureDrafts.value.set(duplicatedProduct, getAccountStoreProductFeaturesText(product));
+  form.account_store_config.products.splice(index + 1, 0, duplicatedProduct);
 }
 
 function removeAccountStoreProduct(index: number): void {
@@ -9327,10 +9341,6 @@ function moveAccountStoreProduct(index: number, direction: -1 | 1): void {
   const current = products[index];
   products[index] = products[targetIndex];
   products[targetIndex] = current;
-}
-
-function setAccountStoreProductFeatures(product: AccountStoreProduct, raw: string): void {
-  product.features = splitAccountStoreFeatures(raw);
 }
 
 function addLoginAgreementDocument() {
